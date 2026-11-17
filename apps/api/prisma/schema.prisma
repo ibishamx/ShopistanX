@@ -1,0 +1,361 @@
+// Shopistan database schema.
+//
+// Platform tables have no tenant_id. Every merchant-owned table has a non-null
+// tenant_id and a row-level security policy (see migrations/*_rls).
+// Money is stored as integer paisa.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Platform tables ─────────────────────────────
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(TRIAL)
+  plan      String       @default("trial")
+  createdAt DateTime     @default(now())
+
+  memberships Membership[]
+  sessions    Session[]
+  domains     Domain[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  name         String
+  phone        String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  memberships Membership[]
+  sessions    Session[]
+
+  @@map("users")
+}
+
+model Membership {
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @db.Uuid
+  tenantId String @map("member_tenant_id") @db.Uuid
+  role     String @default("owner")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@map("memberships")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  tenantId  String   @map("active_tenant_id") @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+enum DomainType {
+  SUBDOMAIN
+  CUSTOM
+}
+
+model Domain {
+  id       String     @id @default(uuid()) @db.Uuid
+  hostname String     @unique
+  tenantId String     @map("domain_tenant_id") @db.Uuid
+  type     DomainType @default(SUBDOMAIN)
+  verified Boolean    @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("domains")
+}
+
+model PlatformAdmin {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  sessions PlatformSession[]
+
+  @@map("platform_admins")
+}
+
+model PlatformSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  adminId   String   @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  admin PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("platform_sessions")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorId        String   @db.Uuid
+  actorEmail     String
+  targetTenantId String?  @db.Uuid
+  action         String
+  detail         Json?
+  ip             String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ────────────────────────────── Tenant tables ──────────────────────────────
+
+model StoreSettings {
+  tenantId              String  @id @map("tenant_id") @db.Uuid
+  supportPhone          String?
+  whatsappNumber        String?
+  shippingFeePaisa      Int     @default(25000)
+  freeShippingOverPaisa Int?
+  nextOrderNumber       Int     @default(1001)
+  codForm               Json    @default("{}")
+  theme                 Json    @default("{}")
+
+  @@map("store_settings")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+}
+
+model Product {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  title       String
+  handle      String
+  description String        @default("")
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, handle])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @map("tenant_id") @db.Uuid
+  productId      String  @db.Uuid
+  title          String  @default("Default")
+  sku            String?
+  pricePaisa     Int
+  compareAtPaisa Int?
+  stock          Int     @default(0)
+  position       Int     @default(0)
+
+  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, sku])
+  @@index([tenantId, productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @map("tenant_id") @db.Uuid
+  productId String @db.Uuid
+  url       String
+  position  Int    @default(0)
+
+  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, productId])
+  @@map("product_media")
+}
+
+model Customer {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  phone     String
+  email     String?
+  city      String?
+  createdAt DateTime @default(now())
+
+  orders Order[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, phone])
+  @@map("customers")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+model Order {
+  id                String            @id @default(uuid()) @db.Uuid
+  tenantId          String            @map("tenant_id") @db.Uuid
+  number            Int
+  publicToken       String
+  customerId        String            @db.Uuid
+  status            OrderStatus       @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  paymentMethod     String            @default("COD")
+  source            String            @default("cod_form")
+  confirmedVia      String?
+  customerName      String
+  phone             String
+  email             String?
+  addressLine       String
+  city              String
+  notes             String?
+  subtotalPaisa     Int
+  shippingPaisa     Int
+  totalPaisa        Int
+  courierName       String?
+  trackingNumber    String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  customer      Customer          @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  items         OrderItem[]
+  events        OrderEvent[]
+  notifications NotificationLog[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, number])
+  @@unique([tenantId, publicToken])
+  @@index([tenantId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @map("tenant_id") @db.Uuid
+  orderId        String  @db.Uuid
+  // Snapshot reference; intentionally not a foreign key so products can be deleted.
+  variantId      String  @db.Uuid
+  title          String
+  variantTitle   String
+  sku            String?
+  unitPricePaisa Int
+  quantity       Int
+
+  order Order @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("order_items")
+}
+
+model OrderEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  orderId   String   @db.Uuid
+  type      String
+  message   String
+  actor     String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("order_events")
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  UNVERIFIED
+  VERIFIED
+}
+
+// A merchant's own WhatsApp Business Cloud API credentials (bring-your-own).
+model WhatsappAccount {
+  tenantId         String            @id @map("tenant_id") @db.Uuid
+  phoneNumberId    String
+  accessTokenEnc   String
+  appSecretEnc     String?
+  verifyToken      String
+  templateName     String
+  templateLanguage String            @default("en")
+  autoSend         Boolean           @default(true)
+  status           IntegrationStatus @default(UNVERIFIED)
+  lastError        String?
+  verifiedAt       DateTime?
+  updatedAt        DateTime          @updatedAt
+
+  @@map("whatsapp_accounts")
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model NotificationLog {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  orderId           String?            @db.Uuid
+  channel           String             @default("whatsapp")
+  kind              String
+  recipient         String
+  status            NotificationStatus @default(QUEUED)
+  providerMessageId String?
+  error             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  order Order? @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, providerMessageId])
+  @@index([tenantId, orderId])
+  @@map("notification_log")
+}
