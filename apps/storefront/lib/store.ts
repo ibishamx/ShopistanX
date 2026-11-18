@@ -10,7 +10,27 @@ export interface Store {
   shippingFeePaisa: number;
   freeShippingOverPaisa: number | null;
   codForm: { enabled: boolean; headline: string; subheadline: string; buttonText: string; showEmail: boolean; showNotes: boolean };
-  theme: { announcement: string; heroHeading: string; heroSubheading: string; accentColor: string };
+  theme: Theme;
+}
+
+export type TrustIcon = 'truck' | 'cash' | 'return' | 'shield' | 'whatsapp' | 'box';
+
+export interface Theme {
+  logoUrl: string;
+  announcements: string[];
+  heroImageUrl: string;
+  heroHeading: string;
+  heroSubheading: string;
+  heroButtonText: string;
+  showRunway: boolean;
+  runwayHeading: string;
+  marqueeLarge: string[];
+  marqueeSmall: string[];
+  trustItems: { icon: TrustIcon; title: string; text: string }[];
+  faq: { question: string; answer: string }[];
+  deliveryEstimate: string;
+  footerText: string;
+  accentColor: string;
 }
 
 export interface Variant {

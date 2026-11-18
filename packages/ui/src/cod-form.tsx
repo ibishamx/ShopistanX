@@ -98,7 +98,7 @@ export function CodOrderForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className="rounded-2xl border border-line bg-white p-5">
+    <form onSubmit={submit} noValidate data-cod-form className="rounded-2xl border border-line bg-white p-5">
       <h2 className="text-lg font-semibold tracking-tight">{config.headline}</h2>
       {config.subheadline && <p className="mt-1 text-sm text-muted">{config.subheadline}</p>}
 

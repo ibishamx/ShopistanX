@@ -23,8 +23,6 @@ export default function SettingsPage() {
   if (s.loading) return <Loading />;
   if (s.error || !s.draft) return <LoadError error={s.error!} />;
   const { draft } = s;
-  const theme = draft.theme;
-  const setTheme = (patch: object) => s.update({ theme: { ...theme, ...patch } });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,20 +61,6 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Delivery charge (Rs)" inputMode="decimal" required value={money.fee} onChange={(e) => setMoney({ ...money, fee: e.target.value })} />
             <Input label="Free delivery on orders over (Rs)" inputMode="decimal" value={money.free} onChange={(e) => setMoney({ ...money, free: e.target.value })} hint="Leave empty to always charge delivery" />
-          </div>
-        </Card>
-        <Card title="Storefront">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Announcement bar" value={theme.announcement} maxLength={120} onChange={(e) => setTheme({ announcement: e.target.value })} hint="Leave empty to hide the bar" />
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Accent colour</span>
-              <span className="flex items-center gap-2">
-                <input type="color" value={theme.accentColor} onChange={(e) => setTheme({ accentColor: e.target.value })} className="h-9 w-12 cursor-pointer rounded border border-line bg-white" />
-                <span className="text-sm text-muted">{theme.accentColor}</span>
-              </span>
-            </label>
-            <Input label="Homepage heading" required value={theme.heroHeading} maxLength={80} onChange={(e) => setTheme({ heroHeading: e.target.value })} />
-            <Input label="Homepage subheading" value={theme.heroSubheading} maxLength={200} onChange={(e) => setTheme({ heroSubheading: e.target.value })} />
           </div>
         </Card>
       </div>

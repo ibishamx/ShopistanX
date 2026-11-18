@@ -1,2 +1,137 @@
 @import "@shopistan/ui/theme.css";
 @source "../../../packages/ui/src";
+
+/* Storefront design: black and white with a warm beige accent, Inter for
+   text and a serif for display headings. --accent is the store's chosen
+   button colour (black by default). */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --color-sand-50: #fbf9f6;
+  --color-sand-100: #f7f4ef;
+  --color-sand-200: #eee8df;
+  --color-sand-300: #e4ddd1;
+  --color-sand-400: #dfd3c5;
+  --color-sand-600: #a67c52;
+  --color-sand-700: #8b6951;
+  --color-cocoa: #29221d;
+  --color-taupe: #71665c;
+}
+
+.sf {
+  --color-ink: #111111;
+  --color-muted: #6b6560;
+  --color-line: #dfdfdf;
+  --color-canvas: #f7f4ef;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+}
+
+/* Shared UI components, restyled for the storefront. */
+.sf input,
+.sf textarea,
+.sf select {
+  border-radius: 4px;
+}
+.sf button,
+.sf .btn {
+  border-radius: 14px;
+}
+
+.sf-display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.sf-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Scrolling rows: the content is rendered twice and the track moves by half. */
+@keyframes sf-scroll-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes sf-scroll-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+.sf-track {
+  display: flex;
+  width: max-content;
+  animation: sf-scroll-left var(--sf-duration, 30s) linear infinite;
+}
+.sf-track[data-direction="right"] {
+  animation-name: sf-scroll-right;
+}
+.sf-scroller:hover .sf-track {
+  animation-play-state: paused;
+}
+
+/* Runway: products walk towards the viewer, one every 3 seconds. */
+@keyframes sf-walk {
+  0% { transform: translateX(-50%) translateY(-17%) scale(0.28); opacity: 0; z-index: 1; }
+  7% { opacity: 0.9; }
+  35% { transform: translateX(-110%) translateY(-6%) scale(0.66); opacity: 1; z-index: 3; }
+  55% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; z-index: 6; }
+  72% { transform: translateX(25%) translateY(0) scale(1.05); opacity: 1; z-index: 5; }
+  91% { opacity: 0; }
+  100% { transform: translateX(130%) translateY(0) scale(0.85); opacity: 0; z-index: 2; }
+}
+.sf-runway-model {
+  position: absolute;
+  bottom: 7%;
+  left: 50%;
+  width: clamp(135px, 26vw, 340px);
+  height: 84%;
+  transform-origin: 50% 100%;
+  opacity: 0;
+  animation: sf-walk var(--sf-duration) linear infinite;
+  animation-delay: calc(var(--i) * -3s);
+}
+.sf-runway-floor {
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #e4ddd1 0%, #eee8df 60%, #f7f4ef 100%);
+}
+
+/* Cart drawer */
+@keyframes sf-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.sf-drawer {
+  animation: sf-slide-in 0.25s ease-out;
+}
+
+/* FAQ disclosure icon */
+.sf-faq summary::-webkit-details-marker { display: none; }
+.sf-faq[open] .sf-faq-icon { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-track { animation: none; }
+  .sf-scroller { overflow-x: auto; }
+  .sf-runway-model { animation: none; }
+  .sf-runway-model:first-child { opacity: 1; transform: translateX(-50%); z-index: 5; }
+  .sf-drawer { animation: none; }
+}
+
+/* COD order form: a squared box with a strong outline, like the rest of the store. */
+.sf [data-cod-form] {
+  border-radius: 4px;
+  border-color: #111;
+}
+.sf [data-cod-form] h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 22px;
+}
+.sf [data-cod-form] dl {
+  border-radius: 4px;
+  background: var(--color-sand-100);
+}

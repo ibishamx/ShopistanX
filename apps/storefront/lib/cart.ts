@@ -20,6 +20,7 @@ const EMPTY: CartLine[] = [];
 const listeners = new Set<() => void>();
 let cached: CartLine[] = EMPTY;
 let cachedRaw: string | null = null;
+let drawerOpen = false;
 
 function read(): CartLine[] {
   let raw: string | null = null;
@@ -40,6 +41,8 @@ function read(): CartLine[] {
   return cached;
 }
 
+const notify = () => listeners.forEach((l) => l());
+
 function write(lines: CartLine[]) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(lines));
@@ -48,7 +51,7 @@ function write(lines: CartLine[]) {
     cached = lines;
     cachedRaw = null;
   }
-  listeners.forEach((l) => l());
+  notify();
 }
 
 function subscribe(listener: () => void) {
@@ -64,6 +67,16 @@ export function useCart(): CartLine[] {
   return useSyncExternalStore(subscribe, read, () => EMPTY);
 }
 
+export function useCartDrawer(): boolean {
+  return useSyncExternalStore(subscribe, () => drawerOpen, () => false);
+}
+
+export function setCartDrawer(open: boolean) {
+  drawerOpen = open;
+  notify();
+}
+
+/** Adds a line and opens the cart drawer. */
 export function addToCart(line: CartLine) {
   const lines = read();
   const existing = lines.find((l) => l.variantId === line.variantId);
@@ -72,6 +85,7 @@ export function addToCart(line: CartLine) {
       ? lines.map((l) => (l === existing ? { ...line, quantity: Math.min(l.quantity + line.quantity, line.maxQuantity) } : l))
       : [...lines, line],
   );
+  setCartDrawer(true);
 }
 
 export function setQuantity(variantId: string, quantity: number) {

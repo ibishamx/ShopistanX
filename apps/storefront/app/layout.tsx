@@ -1,12 +1,19 @@
+import '@fontsource-variable/inter';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { CartLink } from '@/components/cart-link';
+import { CartDrawer } from '@/components/cart-drawer';
+import { Footer } from '@/components/footer';
+import { Header } from '@/components/header';
+import { Scroller } from '@/components/scroller';
 import { getStore } from '@/lib/store';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const store = await getStore();
-  return store.ok ? { title: { default: store.data.name, template: `%s · ${store.data.name}` } } : { title: 'Store unavailable' };
+  if (!store.ok) return { title: 'Store unavailable' };
+  return {
+    title: { default: store.data.name, template: `%s · ${store.data.name}` },
+    icons: store.data.theme.logoUrl ? { icon: store.data.theme.logoUrl } : undefined,
+  };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           : { title: 'This store could not be loaded', text: 'Please try again in a moment.' };
     return (
       <html lang="en">
-        <body>
+        <body className="sf">
           <main className="grid min-h-screen place-items-center px-4 text-center">
             <div>
               <h1 className="text-xl font-semibold">{message.title}</h1>
@@ -34,28 +41,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   const store = result.data;
+  const { announcements } = store.theme;
   return (
     <html lang="en">
-      <body style={{ ['--accent' as string]: store.theme.accentColor }} className="flex min-h-screen flex-col">
-        {store.theme.announcement && (
-          <p className="px-4 py-2 text-center text-sm font-medium text-white" style={{ background: 'var(--accent)' }}>
-            {store.theme.announcement}
-          </p>
+      <body style={{ ['--accent' as string]: store.theme.accentColor }} className="sf flex min-h-screen flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-white focus:px-3 focus:py-2">Skip to content</a>
+        {announcements.length > 0 && (
+          <div className="bg-[#111] py-2.5 text-sm text-white" role="region" aria-label="Announcements">
+            <Scroller items={announcements} separator="✦" seconds={25} itemClassName="inline-flex items-center gap-6 whitespace-nowrap px-3" />
+          </div>
         )}
-        <header className="border-b border-line bg-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight">{store.name}</Link>
-            <CartLink />
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-line bg-white">
-          <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 px-4 py-6 text-sm text-muted">
-            <p>© {new Date().getFullYear()} {store.name}</p>
-            {store.supportPhone && <p>Help: <a className="underline" href={`tel:${store.supportPhone}`}>{store.supportPhone}</a></p>}
-            <p>Powered by Shopistan</p>
-          </div>
-        </footer>
+        <Header name={store.name} logoUrl={store.theme.logoUrl} />
+        <main id="main" className="flex-1">{children}</main>
+        <Footer store={store} />
+        <CartDrawer />
       </body>
     </html>
   );

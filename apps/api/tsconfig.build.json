@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "rootDir": "src" },
+  "compilerOptions": {
+    "rootDir": "src",
+    // Nest deletes dist before building; an incremental cache would then emit nothing.
+    "incremental": false
+  },
   "include": ["src"]
 }

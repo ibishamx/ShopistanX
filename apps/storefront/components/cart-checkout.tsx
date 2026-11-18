@@ -13,23 +13,23 @@ export function CartCheckout({ store }: { store: Store }) {
 
   if (!lines.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-line bg-white px-6 py-14 text-center">
+      <div className="border border-dashed border-line bg-white px-6 py-14 text-center">
         <p className="font-medium">Your cart is empty</p>
-        <Link href="/" className="mt-3 inline-block text-sm font-medium underline">Continue shopping</Link>
+        <Link href="/products" className="btn mt-4 inline-block border border-black px-6 py-2.5 text-sm">Continue shopping</Link>
       </div>
     );
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-      <ul className="divide-y divide-line self-start rounded-2xl border border-line bg-white">
+      <ul className="divide-y divide-line self-start border-y border-line bg-white">
         {lines.map((l) => (
-          <li key={l.variantId} className="flex gap-4 p-4">
+          <li key={l.variantId} className="flex gap-4 py-4">
             {l.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={l.image} alt="" className="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" />
+              <img src={l.image} alt="" className="aspect-[3/4] w-20 shrink-0 bg-sand-100 object-cover" />
             ) : (
-              <span className="h-20 w-20 shrink-0 rounded-lg border border-line bg-canvas" />
+              <span className="aspect-[3/4] w-20 shrink-0 bg-sand-100" />
             )}
             <div className="min-w-0 flex-1">
               <Link href={`/products/${l.handle}`} className="font-medium hover:underline">{l.title}</Link>

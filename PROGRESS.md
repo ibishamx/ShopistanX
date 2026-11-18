@@ -1,6 +1,6 @@
 # Progress log
 
-Last updated: 17 Nov 2026
+Last updated: 18 Nov 2026
 
 ## Done and verified
 
@@ -15,6 +15,8 @@ real PostgreSQL) and exercised in a browser against the running apps.
 | Merchant signup, login, sessions, instant `<slug>` subdomain | Verified |
 | Products with variants, stock, SKU, prices in PKR (stored as paisa) | Verified |
 | Storefront: home, product page, cart | Verified |
+| Storefront design modelled on the MC Store theme export: scrolling announcement bar, centred logo header, banner, product runway, 9:16 product cards with Sale badge, two-row marquee, trust badges, FAQ, cart drawer, product gallery, footer | Verified in desktop and mobile browsers |
+| Merchant Admin "Storefront design" page for logo, banner, announcements, runway, marquee, trust badges, delivery time, FAQ, footer text, button colour | Verified |
 | **COD form** on product page and cart, merchant-editable with live preview | Verified |
 | COD orders: server-side totals, atomic stock reservation, per-store order numbers | Verified |
 | Order flow: confirm, cancel (restock), ship with courier and tracking number, delivered, returned (restock) | Verified |
@@ -42,8 +44,14 @@ real PostgreSQL) and exercised in a browser against the running apps.
 - Plain pnpm workspaces; Turborepo not added.
 - Product images are links; there is no upload or S3 storage yet.
 - Inventory is a stock number per variant (no locations table).
-- Theme: one theme with editable announcement, hero text and accent colour.
-  The JSON section model and draft/publish are not built.
+- Theme: one design with editable content. Sections can be hidden but not
+  reordered; the JSON section model and draft/publish are not built.
+- The MC Store theme's fixed "sold this month", "people viewing", star rating,
+  countdown timer and hard-coded reviews were not recreated, since every store
+  would show the same made-up numbers. Real reviews and real sales counts need
+  their own data first.
+- The theme's collection grid, video reels and search are not built (no
+  collections, video or search in the platform yet).
 
 ## Not built yet
 

@@ -54,9 +54,9 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <div className="rounded-2xl border border-line bg-white p-6 text-center">
+      <div className="border border-line bg-white p-6 text-center sm:p-8">
         <p className="text-sm text-muted">Order #{order.number}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{h.title}</h1>
+        <h1 className="sf-display mt-2 text-[28px]">{h.title}</h1>
         <p className="mt-2 text-sm text-muted">{h.text}</p>
 
         {pending && (
@@ -66,7 +66,7 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
                 href={order.whatsappConfirmUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-full items-center justify-center rounded-lg bg-[#128c4b] px-4 py-3 text-base font-medium text-white hover:bg-[#0f7a41]"
+                className="btn flex w-full items-center justify-center bg-[#128c4b] px-4 py-3 text-base font-medium text-white hover:bg-[#0f7a41]"
               >
                 Confirm on WhatsApp
               </a>
@@ -75,7 +75,7 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
               type="button"
               disabled={!!busy}
               onClick={() => act('confirm')}
-              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50 ${order.whatsappConfirmUrl ? 'border border-line bg-white hover:bg-canvas' : 'text-white'}`}
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 px-4 py-3 text-base font-medium disabled:opacity-50 ${order.whatsappConfirmUrl ? 'border border-black bg-white hover:bg-sand-100' : 'text-white'}`}
               style={order.whatsappConfirmUrl ? undefined : { background: 'var(--accent)' }}
             >
               {busy === 'confirm' && <Spinner />}
@@ -86,7 +86,7 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
         {error && <div className="mt-4 text-left"><Notice>{error}</Notice></div>}
       </div>
 
-      <div className="rounded-2xl border border-line bg-white p-6">
+      <div className="border border-line bg-white p-6 sm:p-8">
         <h2 className="text-sm font-semibold">Order summary</h2>
         <ul className="mt-3 divide-y divide-line text-sm">
           {order.items.map((i, idx) => (

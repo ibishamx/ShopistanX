@@ -141,3 +141,56 @@ describe('COD form orders', () => {
     await m.agent.put('/admin/settings').send({ ...current, whatsappNumber: '12' }).expect(400);
   });
 });
+
+describe('storefront design settings', () => {
+  let t: TestApp;
+  let m: Merchant;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    m = await registerMerchant(t, 'design');
+  });
+
+  afterAll(() => t.app.close());
+
+  it('serves the default design to new stores', async () => {
+    const store = await t.http().get('/storefront/store').set('Host', m.host).expect(200);
+    expect(store.body.theme).toMatchObject({ heroButtonText: 'Shop all', showRunway: true, accentColor: '#111111' });
+    expect(store.body.theme.trustItems[1]).toMatchObject({ icon: 'cash', title: 'Cash on Delivery' });
+  });
+
+  it('saves and validates design settings', async () => {
+    const current = (await m.agent.get('/admin/settings')).body;
+    const theme = {
+      ...current.theme,
+      heroImageUrl: 'https://example.com/hero.jpg',
+      announcements: ['Winter stock is live', 'Free delivery over Rs 5,000'],
+      faq: [{ question: 'Can I open the parcel?', answer: 'Yes, check it before you pay.' }],
+      trustItems: [{ icon: 'shield', title: 'Original', text: 'Checked before dispatch' }],
+      deliveryEstimate: 'Delivery in 2–4 working days',
+    };
+    await m.agent.put('/admin/settings').send({ ...current, theme }).expect(200);
+    const store = await t.http().get('/storefront/store').set('Host', m.host).expect(200);
+    expect(store.body.theme).toMatchObject({
+      heroImageUrl: 'https://example.com/hero.jpg',
+      announcements: ['Winter stock is live', 'Free delivery over Rs 5,000'],
+      deliveryEstimate: 'Delivery in 2–4 working days',
+    });
+
+    const bad = await m.agent.put('/admin/settings').send({ ...current, theme: { ...theme, heroImageUrl: 'not a url' } }).expect(400);
+    expect(bad.body.field).toBe('theme.heroImageUrl');
+    await m.agent.put('/admin/settings').send({ ...current, theme: { ...theme, trustItems: [{ icon: 'rocket', title: 'x', text: '' }] } }).expect(400);
+  });
+
+  it('upgrades stores saved with the earlier single announcement', async () => {
+    await t.db.tenant(m.tenantId, (tx) =>
+      tx.storeSettings.update({
+        where: { tenantId: m.tenantId },
+        data: { theme: { announcement: 'Old bar text', heroHeading: 'Old heading', accentColor: '#0f766e', heroImageUrl: 42 } },
+      }),
+    );
+    const store = await t.http().get('/storefront/store').set('Host', m.host).expect(200);
+    expect(store.body.theme).toMatchObject({ announcements: ['Old bar text'], heroHeading: 'Old heading', accentColor: '#0f766e', heroImageUrl: '' });
+    expect(store.body.theme.announcement).toBeUndefined();
+  });
+});

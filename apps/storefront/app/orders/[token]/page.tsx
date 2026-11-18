@@ -11,7 +11,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const order = await storeFetch<PublicOrder>(`/orders/${encodeURIComponent(token)}`);
   if (!order.ok) {
     if (order.status === 404) notFound();
-    return <p className="text-sm text-muted">Your order could not be loaded. Please refresh the page.</p>;
+    return <p className="mx-auto max-w-6xl px-4 py-10 text-sm text-muted">Your order could not be loaded. Please refresh the page.</p>;
   }
-  return <OrderStatus token={token} initial={order.data} justPlaced={placed === '1'} />;
+  return (
+    <div className="bg-sand-50 px-4 py-10">
+      <OrderStatus token={token} initial={order.data} justPlaced={placed === '1'} />
+    </div>
+  );
 }
