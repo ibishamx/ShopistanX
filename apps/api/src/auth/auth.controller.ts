@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { hashPassword, randomToken, sha256, verifyPassword } from '../common/crypto';
 import { parse, slugify } from '../common/util';
-import { config, storefrontHostname, storefrontUrl } from '../config';
+import { config, primaryHostname, storefrontHostname, storefrontUrl } from '../config';
 import { Db } from '../db/db.service';
 import { DEFAULT_COD_FORM, DEFAULT_THEME } from '../settings/defaults';
 import { Auth, MerchantAuth, MerchantGuard, SESSION_COOKIE } from './auth.guard';
@@ -87,10 +87,10 @@ export class AuthController {
   @Get('me')
   @UseGuards(MerchantGuard)
   async me(@Auth() auth: MerchantAuth) {
-    const [user, tenant, domain] = await Promise.all([
+    const [user, tenant, domains] = await Promise.all([
       this.db.app.user.findUniqueOrThrow({ where: { id: auth.userId } }),
       this.db.app.tenant.findUniqueOrThrow({ where: { id: auth.tenantId } }),
-      this.db.app.domain.findFirst({ where: { tenantId: auth.tenantId }, orderBy: { type: 'desc' } }),
+      this.db.app.domain.findMany({ where: { tenantId: auth.tenantId } }),
     ]);
     return {
       user: { id: user.id, name: user.name, email: user.email },
@@ -100,7 +100,7 @@ export class AuthController {
         slug: tenant.slug,
         status: tenant.status,
         plan: tenant.plan,
-        url: domain ? storefrontUrl(domain.hostname) : null,
+        url: primaryHostname(domains) ? storefrontUrl(primaryHostname(domains)!) : null,
       },
     };
   }

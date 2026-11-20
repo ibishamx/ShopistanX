@@ -90,3 +90,23 @@ describe('on-demand TLS check', () => {
     await t.http().get('/internal/tls/allowed').expect(404);
   });
 });
+
+describe('store address after a domain change', () => {
+  let t: TestApp;
+  let m: Merchant;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    m = await registerMerchant(t, 'moved');
+  });
+
+  afterAll(() => t.app.close());
+
+  it('shows the address on the current root domain, not an older one', async () => {
+    // Simulate a store created under an earlier root domain.
+    await t.db.platform.domain.updateMany({ where: { tenantId: m.tenantId }, data: { hostname: `${m.slug}.old-root.test` } });
+    await t.db.platform.domain.create({ data: { tenantId: m.tenantId, hostname: m.host, type: 'SUBDOMAIN' } });
+    const me = await m.agent.get('/auth/me').expect(200);
+    expect(me.body.store.url).toBe(`http://${m.host}`);
+  });
+});

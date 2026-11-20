@@ -33,3 +33,17 @@ export function storefrontUrl(hostname: string): string {
   const port = config.storefrontPort ? `:${config.storefrontPort}` : '';
   return `${config.storefrontProtocol}://${hostname}${port}`;
 }
+
+/**
+ * The address to show for a store: its own verified custom domain first,
+ * then its subdomain on the current root domain, then anything it has (for
+ * example an address on a previous root domain).
+ */
+export function primaryHostname(domains: { hostname: string; type: string; verified: boolean }[]): string | null {
+  const suffix = `.${config.storefrontRootDomain}`;
+  const pick =
+    domains.find((d) => d.type === 'CUSTOM' && d.verified) ??
+    domains.find((d) => d.type === 'SUBDOMAIN' && d.hostname.endsWith(suffix)) ??
+    domains[0];
+  return pick?.hostname ?? null;
+}

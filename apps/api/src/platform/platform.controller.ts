@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { randomToken, sha256, verifyPassword } from '../common/crypto';
 import { parse } from '../common/util';
-import { config, storefrontUrl } from '../config';
+import { config, primaryHostname, storefrontUrl } from '../config';
 import { Db } from '../db/db.service';
 
 // Super Admin: separate staff table, separate session cookie, separate database role.
@@ -86,7 +86,7 @@ export class PlatformController {
       status: t.status,
       plan: t.plan,
       createdAt: t.createdAt,
-      url: t.domains[0] ? storefrontUrl(t.domains[0].hostname) : null,
+      url: primaryHostname(t.domains) ? storefrontUrl(primaryHostname(t.domains)!) : null,
       owner: t.memberships[0]?.user ?? null,
       orders: count(orders, t.id),
       products: count(products, t.id),

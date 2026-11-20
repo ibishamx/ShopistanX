@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { NotificationLog, Order, WhatsappAccount } from '@prisma/client';
 import { decrypt } from '../common/crypto';
 import { formatRupees } from '../common/util';
-import { config, storefrontUrl } from '../config';
+import { config, primaryHostname, storefrontUrl } from '../config';
 import { Db, Tx } from '../db/db.service';
 
 export const CONFIRM_PAYLOAD = 'CONFIRM_ORDER';
@@ -34,12 +34,13 @@ export class WhatsappService {
   // ───────────────────────── click-to-chat links ─────────────────────────
 
   private async storeContext(tx: Tx, tenantId: string) {
-    const [tenant, domain, settings] = await Promise.all([
+    const [tenant, domains, settings] = await Promise.all([
       tx.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
-      tx.domain.findFirst({ where: { tenantId }, orderBy: { type: 'desc' } }),
+      tx.domain.findMany({ where: { tenantId } }),
       tx.storeSettings.findUniqueOrThrow({ where: { tenantId } }),
     ]);
-    return { storeName: tenant.name, baseUrl: domain ? storefrontUrl(domain.hostname) : '', settings };
+    const hostname = primaryHostname(domains);
+    return { storeName: tenant.name, baseUrl: hostname ? storefrontUrl(hostname) : '', settings };
   }
 
   /** Links shown to the merchant on the order page. */
