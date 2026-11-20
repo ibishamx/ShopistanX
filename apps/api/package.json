@@ -13,7 +13,8 @@
     "db:roles": "tsx scripts/setup-roles.ts",
     "db:check-rls": "tsx scripts/check-rls.ts",
     "db:setup": "pnpm db:migrate && pnpm db:roles && pnpm db:check-rls",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:sync-domains": "tsx scripts/sync-domains.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

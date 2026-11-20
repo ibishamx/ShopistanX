@@ -46,8 +46,9 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?}
       PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:?}
       PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:?}
+      STOREFRONT_ROOT_DOMAIN: ${DOMAIN}
     working_dir: /app/apps/api
-    command: ["sh", "-c", "pnpm db:setup && pnpm db:seed"]
+    command: ["sh", "-c", "pnpm db:setup && pnpm db:seed && pnpm db:sync-domains"]
 
   api:
     <<: *app

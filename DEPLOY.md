@@ -36,6 +36,7 @@ Skipping step 2 works too (leave out `DOMAIN=...`): the server then uses
 certificates for new store addresses can sometimes fail; use DuckDNS or
 your own domain for real use. To move to your own domain later, point its
 DNS at the server (below) and run the installer again with `DOMAIN=yourdomain.pk`.
+Existing stores get an address on the new domain automatically.
 
 The rest of this guide is the manual route and day-to-day operations.
 
