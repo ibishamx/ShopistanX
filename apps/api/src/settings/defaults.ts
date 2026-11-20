@@ -23,7 +23,7 @@ export const DEFAULT_COD_FORM: CodFormConfig = {
   showLandmark: true,
 };
 
-const optionalUrl = z.union([z.literal(''), z.string().trim().url().max(2000)]);
+const optionalUrl = z.union([z.literal(''), z.string().trim().url().max(2000), z.string().trim().regex(/^\/[^\s/][^\s]*$/, 'Use a full link starting with https://').max(2000)]);
 const line = (max: number) => z.string().trim().max(max);
 
 export const TRUST_ICONS = ['truck', 'cash', 'return', 'shield', 'whatsapp', 'box'] as const;

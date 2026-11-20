@@ -17,7 +17,8 @@ const productSchema = z.object({
   title: z.string().trim().min(1).max(160),
   description: z.string().max(10_000).default(''),
   status: z.enum(['DRAFT', 'ACTIVE']).default('ACTIVE'),
-  images: z.array(z.string().trim().url().max(2000)).max(20).default([]),
+  // Full URLs, or paths served by the storefront itself (e.g. /demo-img/a.jpg).
+  images: z.array(z.union([z.string().trim().url().max(2000), z.string().trim().regex(/^\/[^\s/][^\s]*$/).max(2000)])).max(20).default([]),
   variants: z.array(variantSchema).min(1, 'Add at least one variant').max(100),
 });
 type ProductInput = z.infer<typeof productSchema>;

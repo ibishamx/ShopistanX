@@ -23,9 +23,15 @@ export class StoreHostGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { store?: StoreContext }>();
     const raw = String(req.headers['x-forwarded-host'] ?? req.headers.host ?? '');
     const hostname = raw.split(',')[0].trim().toLowerCase().replace(/:\d+$/, '');
-    const domain = hostname
+    let domain = hostname
       ? await this.db.app.domain.findUnique({ where: { hostname }, include: { tenant: true } })
       : null;
+    // Development only: serve one store on any unknown host (e.g. a preview URL).
+    // Never set STOREFRONT_FALLBACK_SLUG in production.
+    const fallback = process.env.STOREFRONT_FALLBACK_SLUG;
+    if (!domain && fallback) {
+      domain = await this.db.app.domain.findFirst({ where: { tenant: { slug: fallback } }, include: { tenant: true } });
+    }
     if (!domain || !domain.verified) throw new NotFoundException('Store not found');
     if (domain.tenant.status === 'SUSPENDED' || domain.tenant.status === 'DEACTIVATED') {
       throw new ServiceUnavailableException({ code: 'STORE_UNAVAILABLE', message: 'This store is currently unavailable.' });

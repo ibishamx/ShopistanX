@@ -75,7 +75,7 @@ export default function DesignPage() {
 
         <Card title="Brand">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Logo image link" type="url" placeholder="https://…/logo.png" value={theme.logoUrl} onChange={(e) => set({ logoUrl: e.target.value })} error={fieldError('logoUrl')} hint="Leave empty to show your store name in the header" />
+            <Input label="Logo image link" type="text" inputMode="url" placeholder="https://…/logo.png" value={theme.logoUrl} onChange={(e) => set({ logoUrl: e.target.value })} error={fieldError('logoUrl')} hint="Leave empty to show your store name in the header" />
             <label className="block">
               <span className="mb-1 block text-sm font-medium">Button colour</span>
               <span className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export default function DesignPage() {
         <Card title="Homepage banner">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Input label="Banner image link" type="url" placeholder="https://…/banner.jpg" value={theme.heroImageUrl} onChange={(e) => set({ heroImageUrl: e.target.value })} error={fieldError('heroImageUrl')} hint="A wide photo works best. Without one, a warm colour background is used." />
+              <Input label="Banner image link" type="text" inputMode="url" placeholder="https://…/banner.jpg" value={theme.heroImageUrl} onChange={(e) => set({ heroImageUrl: e.target.value })} error={fieldError('heroImageUrl')} hint="A wide photo works best. Without one, a warm colour background is used." />
             </div>
             <Input label="Heading" required maxLength={80} value={theme.heroHeading} onChange={(e) => set({ heroHeading: e.target.value })} error={fieldError('heroHeading')} />
             <Input label="Button text" required maxLength={30} value={theme.heroButtonText} onChange={(e) => set({ heroButtonText: e.target.value })} error={fieldError('heroButtonText')} />
