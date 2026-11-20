@@ -6,7 +6,8 @@
 #   api.{$DOMAIN}        WhatsApp webhooks only (the apps reach the API internally)
 #   <store>.{$DOMAIN}    storefronts, and later merchants' custom domains
 {
-	email {$ACME_EMAIL}
+	# "email you@example.com" when an email is set, otherwise empty.
+	{$ACME_EMAIL_DIRECTIVE}
 	{$CADDY_EXTRA_GLOBAL}
 	on_demand_tls {
 		# Certificates only for hostnames that belong to a store.
