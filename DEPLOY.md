@@ -12,6 +12,33 @@ including one per store subdomain.
 | `https://<store>.<domain>` | Each store |
 | `https://api.<domain>/webhooks/...` | WhatsApp webhooks only; the rest of the API is private |
 
+## Quick start (one command)
+
+1. **Create a server.** On DigitalOcean: Create → Droplets → Ubuntu 24.04,
+   region Bangalore (closest to Pakistan), size 2 vCPU / 4 GB. Copy its IP
+   address.
+2. **Get a free address.** Sign in at duckdns.org, add a name (for example
+   `mystores`), and paste the server's IP into it. Every store then gets an
+   address like `shop1.mystores.duckdns.org` automatically.
+3. **Run the installer.** Open the droplet's Console (Access → Launch
+   Droplet Console) and paste, with your DuckDNS name:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/ibishamx/ShopistanX/claude/bold-ptolemy-2k1x3w/deploy/install.sh | DOMAIN=mystores.duckdns.org bash
+   ```
+
+   It installs everything, builds and starts Shopistan (about 10 minutes),
+   and prints the addresses and the Super Admin login. Run the same command
+   again later to update.
+
+Skipping step 2 works too (leave out `DOMAIN=...`): the server then uses
+`<its-ip>.sslip.io`. That address is shared with many other users, so
+certificates for new store addresses can sometimes fail; use DuckDNS or
+your own domain for real use. To move to your own domain later, point its
+DNS at the server (below) and run the installer again with `DOMAIN=yourdomain.pk`.
+
+The rest of this guide is the manual route and day-to-day operations.
+
 ## What you need
 
 - A server with at least **2 CPU cores, 4 GB RAM and 40 GB disk**, Ubuntu
