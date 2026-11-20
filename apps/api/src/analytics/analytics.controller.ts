@@ -11,7 +11,7 @@ export class AnalyticsController {
   summary(@Auth() auth: MerchantAuth) {
     return this.db.tenant(auth.tenantId, async (tx) => {
       const [groups, top, products, lowStock] = await Promise.all([
-        tx.order.groupBy({ by: ['status', 'fulfillmentStatus'], _count: true, _sum: { totalPaisa: true } }),
+        tx.order.groupBy({ by: ['status', 'fulfillmentStatus', 'onHold'], _count: true, _sum: { totalPaisa: true } }),
         tx.orderItem.groupBy({
           by: ['title'],
           where: { order: { status: { not: 'CANCELLED' } } },
@@ -22,7 +22,7 @@ export class AnalyticsController {
         tx.product.count(),
         tx.productVariant.count({ where: { stock: { lte: 3 } } }),
       ]);
-      const s = { orders: 0, pending: 0, toShip: 0, shipped: 0, delivered: 0, returned: 0, cancelled: 0, bookedPaisa: 0, collectedPaisa: 0 };
+      const s = { orders: 0, held: 0, pending: 0, toShip: 0, shipped: 0, delivered: 0, returned: 0, cancelled: 0, bookedPaisa: 0, collectedPaisa: 0 };
       for (const g of groups) {
         const total = g._sum.totalPaisa ?? 0;
         s.orders += g._count;
@@ -31,7 +31,10 @@ export class AnalyticsController {
         s.bookedPaisa += total;
         if (g.fulfillmentStatus === 'DELIVERED') { s.delivered += g._count; s.collectedPaisa += total; }
         else if (g.fulfillmentStatus === 'SHIPPED') s.shipped += g._count;
-        else if (g.status === 'PENDING') s.pending += g._count;
+        else if (g.status === 'PENDING') {
+          s.pending += g._count;
+          if (g.onHold) s.held += g._count;
+        }
         else s.toShip += g._count;
       }
       return { ...s, products, lowStock, topProducts: top.map((t) => ({ title: t.title, quantity: t._sum.quantity ?? 0 })) };

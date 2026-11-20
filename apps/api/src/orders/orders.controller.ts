@@ -13,6 +13,7 @@ const shipSchema = z.object({
 });
 
 const FILTERS: Record<string, object> = {
+  held: { status: 'PENDING', onHold: true },
   pending: { status: 'PENDING' },
   confirmed: { status: 'CONFIRMED', fulfillmentStatus: 'UNFULFILLED' },
   shipped: { fulfillmentStatus: 'SHIPPED' },

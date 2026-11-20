@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { randomToken } from '../common/crypto';
 import { normalizePkMobile } from '../common/phone';
 import { Db, Tx } from '../db/db.service';
+import { RiskService, decide, readOrderRules } from '../risk/risk.service';
+import { readCodForm } from '../settings/defaults';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 export const codOrderSchema = z.object({
@@ -15,9 +17,17 @@ export const codOrderSchema = z.object({
   phone: z.string().trim().min(1, 'Enter your mobile number').max(20),
   email: z.string().trim().toLowerCase().email('Enter a valid email').max(200).optional().or(z.literal('')),
   addressLine: z.string().trim().min(8, 'Enter your complete address').max(300),
+  landmark: z.string().trim().max(120).optional(),
   city: z.string().trim().min(2, 'Enter your city').max(60),
   notes: z.string().trim().max(500).optional(),
   source: z.enum(['cod_form', 'cart']).default('cod_form'),
+  utm: z
+    .object({
+      source: z.string().trim().max(100).optional(),
+      medium: z.string().trim().max(100).optional(),
+      campaign: z.string().trim().max(150).optional(),
+    })
+    .optional(),
 });
 export type CodOrderInput = z.infer<typeof codOrderSchema>;
 
@@ -28,6 +38,7 @@ export class OrdersService {
   constructor(
     private readonly db: Db,
     private readonly whatsapp: WhatsappService,
+    private readonly risk: RiskService,
   ) {}
 
   /** Places a cash-on-delivery order. Prices and totals are computed here, never taken from the client. */
@@ -36,6 +47,9 @@ export class OrdersService {
     if (!phone) {
       throw new BadRequestException({ field: 'phone', message: 'Enter a valid Pakistani mobile number, e.g. 0300 1234567' });
     }
+
+    // The customer's platform-wide record, read before the order transaction.
+    const risk = await this.risk.forPhone(tenantId, phone);
 
     // Merge duplicate lines so stock is checked against the full quantity.
     const quantities = new Map<string, number>();
@@ -73,6 +87,9 @@ export class OrdersService {
         where: { tenantId },
         data: { nextOrderNumber: { increment: 1 } },
       });
+      if (readCodForm(settings.codForm).showLandmark && !input.landmark) {
+        throw new BadRequestException({ field: 'landmark', message: 'Enter a nearby landmark so the rider can find you' });
+      }
       const number = settings.nextOrderNumber - 1;
       const freeShipping = settings.freeShippingOverPaisa != null && subtotalPaisa >= settings.freeShippingOverPaisa;
       const shippingPaisa = freeShipping ? 0 : settings.shippingFeePaisa;
@@ -83,7 +100,11 @@ export class OrdersService {
         update: { name: input.name, city: input.city, ...(input.email ? { email: input.email } : {}) },
       });
 
-      const order = await tx.order.create({
+      const totalPaisa = subtotalPaisa + shippingPaisa;
+      const decision = decide(readOrderRules(settings.orderRules), risk, totalPaisa);
+      const utm = (value?: string) => (value ? value.slice(0, 150) : null);
+
+      let order = await tx.order.create({
         data: {
           tenantId,
           number,
@@ -94,11 +115,19 @@ export class OrdersService {
           phone,
           email: input.email || null,
           addressLine: input.addressLine,
+          landmark: input.landmark || null,
           city: input.city,
           notes: input.notes || null,
           subtotalPaisa,
           shippingPaisa,
-          totalPaisa: subtotalPaisa + shippingPaisa,
+          totalPaisa,
+          riskLevel: risk.level,
+          riskDetail: risk as object,
+          onHold: decision.action === 'hold',
+          holdReason: decision.action === 'hold' ? decision.reason : null,
+          utmSource: utm(input.utm?.source),
+          utmMedium: utm(input.utm?.medium),
+          utmCampaign: utm(input.utm?.campaign),
           items: {
             create: variants.map((v) => ({
               variantId: v.id,
@@ -119,6 +148,15 @@ export class OrdersService {
         },
       });
 
+      if (decision.action === 'hold') {
+        await this.event(tx, order, 'held', 'system', `Held for your review. ${decision.reason}`);
+      } else if (decision.action === 'auto_confirm') {
+        order = await this.confirm(tx, order, 'system', 'auto_trusted');
+        await this.event(tx, order, 'rule', 'system', decision.reason);
+        // Already confirmed: no confirmation message needed.
+        return { order, notificationId: null };
+      }
+
       // Outbox row written in the same transaction as the order; sent after commit.
       const notificationId = await this.whatsapp.queueOrderConfirmation(tx, order);
       return { order, notificationId };
@@ -131,8 +169,17 @@ export class OrdersService {
   async confirm(tx: Tx, order: Order, actor: Actor, via: string): Promise<Order> {
     if (order.status === 'CONFIRMED') return order;
     if (order.status !== 'PENDING') throw new ConflictException('This order was cancelled and cannot be confirmed');
+
+    // A held order needs the merchant. The customer's confirmation is recorded, not acted on.
+    if (order.onHold && actor !== 'merchant') {
+      if (order.customerConfirmedAt) return order;
+      await this.event(tx, order, 'customer_confirmed', actor, `Customer confirmed (${via.replace(/_/g, ' ')}). Still held for your review.`);
+      return tx.order.update({ where: { id: order.id }, data: { customerConfirmedAt: new Date() } });
+    }
+
+    if (order.onHold) await this.event(tx, order, 'released', actor, 'Hold released');
     await this.event(tx, order, 'confirmed', actor, `Order confirmed (${via.replace(/_/g, ' ')})`);
-    return tx.order.update({ where: { id: order.id }, data: { status: 'CONFIRMED', confirmedVia: via } });
+    return tx.order.update({ where: { id: order.id }, data: { status: 'CONFIRMED', confirmedVia: via, onHold: false } });
   }
 
   async cancel(tx: Tx, order: Order, actor: Actor, reason: string): Promise<Order> {

@@ -8,6 +8,8 @@ export const codFormSchema = z.object({
   buttonText: z.string().trim().min(1).max(40),
   showEmail: z.boolean(),
   showNotes: z.boolean(),
+  /** Ask for a nearby landmark (required when shown). Riders use it to find addresses. */
+  showLandmark: z.boolean(),
 });
 export type CodFormConfig = z.infer<typeof codFormSchema>;
 
@@ -18,6 +20,7 @@ export const DEFAULT_COD_FORM: CodFormConfig = {
   buttonText: 'Place order',
   showEmail: false,
   showNotes: true,
+  showLandmark: true,
 };
 
 const optionalUrl = z.union([z.literal(''), z.string().trim().url().max(2000)]);

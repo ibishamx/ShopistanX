@@ -144,6 +144,7 @@ model StoreSettings {
   nextOrderNumber       Int     @default(1001)
   codForm               Json    @default("{}")
   theme                 Json    @default("{}")
+  orderRules            Json    @default("{}")
 
   @@map("store_settings")
 }
@@ -253,8 +254,20 @@ model Order {
   phone             String
   email             String?
   addressLine       String
+  landmark          String?
   city              String
   notes             String?
+  // Order rules: risk at the time of ordering, and whether the order is held for review.
+  riskLevel         String?
+  riskDetail        Json?
+  onHold            Boolean           @default(false)
+  holdReason        String?
+  // Set when the customer confirmed (link or WhatsApp) while the order was held.
+  customerConfirmedAt DateTime?
+  // Ad attribution captured from the landing URL.
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
   subtotalPaisa     Int
   shippingPaisa     Int
   totalPaisa        Int
@@ -263,15 +276,18 @@ model Order {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  customer      Customer          @relation(fields: [tenantId, customerId], references: [tenantId, id])
-  items         OrderItem[]
-  events        OrderEvent[]
-  notifications NotificationLog[]
+  customer        Customer               @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  items           OrderItem[]
+  events          OrderEvent[]
+  notifications   NotificationLog[]
+  settlementLines CodSettlementLine[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
   @@unique([tenantId, publicToken])
   @@index([tenantId, createdAt])
+  @@index([tenantId, trackingNumber])
+  @@index([phone])
   @@map("orders")
 }
 
@@ -358,4 +374,49 @@ model NotificationLog {
   @@unique([tenantId, providerMessageId])
   @@index([tenantId, orderId])
   @@map("notification_log")
+}
+
+// ─────────────────────────── COD reconciliation ───────────────────────────
+// A courier's payment report, imported by the merchant, matched line by line
+// against shipped orders by tracking number.
+
+model CodSettlement {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  courierName      String
+  reference        String
+  fileName         String?
+  totalPaisa       Int
+  createdAt        DateTime @default(now())
+
+  lines CodSettlementLine[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("cod_settlements")
+}
+
+enum SettlementMatch {
+  MATCHED
+  AMOUNT_MISMATCH
+  NOT_DELIVERED
+  UNKNOWN_TRACKING
+  DUPLICATE
+}
+
+model CodSettlementLine {
+  id             String          @id @default(uuid()) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  settlementId   String          @db.Uuid
+  trackingNumber String
+  amountPaisa    Int
+  orderId        String?         @db.Uuid
+  match          SettlementMatch
+
+  settlement CodSettlement @relation(fields: [tenantId, settlementId], references: [tenantId, id], onDelete: Cascade)
+  order      Order?        @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: SetNull)
+
+  @@index([tenantId, settlementId])
+  @@index([tenantId, orderId])
+  @@map("cod_settlement_lines")
 }

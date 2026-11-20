@@ -4,6 +4,7 @@ import { Auth, MerchantAuth, MerchantGuard } from '../auth/auth.guard';
 import { normalizePkMobile } from '../common/phone';
 import { parse } from '../common/util';
 import { Db } from '../db/db.service';
+import { orderRulesSchema, readOrderRules } from '../risk/risk.service';
 import { codFormSchema, readCodForm, readTheme, themeSchema } from './defaults';
 
 const settingsSchema = z.object({
@@ -14,6 +15,7 @@ const settingsSchema = z.object({
   freeShippingOverPaisa: z.number().int().min(0).max(1_000_000_000).nullish(),
   codForm: codFormSchema,
   theme: themeSchema,
+  orderRules: orderRulesSchema,
 });
 
 @Controller('admin/settings')
@@ -36,6 +38,7 @@ export class SettingsController {
       freeShippingOverPaisa: settings.freeShippingOverPaisa,
       codForm: readCodForm(settings.codForm),
       theme: readTheme(settings.theme),
+      orderRules: readOrderRules(settings.orderRules),
     };
   }
 
@@ -62,6 +65,7 @@ export class SettingsController {
           freeShippingOverPaisa: input.freeShippingOverPaisa ?? null,
           codForm: input.codForm,
           theme: input.theme,
+          orderRules: input.orderRules,
         },
       });
     });

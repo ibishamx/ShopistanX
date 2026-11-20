@@ -67,5 +67,26 @@ export const customer = {
   name: 'Ayesha Khan',
   phone: '0300 1234567',
   addressLine: 'House 12, Street 4, Gulberg III',
+  landmark: 'Near Hafeez Centre',
   city: 'Lahore',
 };
+
+/** Places an order on a storefront and returns its admin id and public token. */
+export async function placeOrder(t: TestApp, m: Merchant, variantId: string, extra: Record<string, unknown> = {}) {
+  const res = await t
+    .http()
+    .post('/storefront/orders')
+    .set('Host', m.host)
+    .send({ ...customer, items: [{ variantId, quantity: 1 }], ...extra })
+    .expect(201);
+  const orders = await m.agent.get('/admin/orders').expect(200);
+  const order = orders.body.find((o: any) => o.number === res.body.number);
+  return { id: order.id as string, token: res.body.token as string, number: res.body.number as number };
+}
+
+/** Drives an order to a final delivery outcome through the merchant API. */
+export async function fulfil(m: Merchant, orderId: string, outcome: 'deliver' | 'return', tracking = `TRK-${orderId.slice(0, 8)}`, courierName = 'PostEx') {
+  await m.agent.post(`/admin/orders/${orderId}/confirm`).expect(200);
+  await m.agent.post(`/admin/orders/${orderId}/ship`).send({ courierName, trackingNumber: tracking }).expect(200);
+  await m.agent.post(`/admin/orders/${orderId}/${outcome}`).expect(200);
+}

@@ -139,10 +139,13 @@ export class StorefrontController {
     return {
       number: order.number,
       status: order.status,
+      // The customer confirmed but the store wants to check first. The reason is not shown to the customer.
+      customerConfirmed: order.status === 'PENDING' && !!order.customerConfirmedAt,
       fulfillmentStatus: order.fulfillmentStatus,
       customerName: order.customerName,
       phone: formatPkMobile(order.phone),
       addressLine: order.addressLine,
+      landmark: order.landmark,
       city: order.city,
       subtotalPaisa: order.subtotalPaisa,
       shippingPaisa: order.shippingPaisa,
