@@ -42,9 +42,15 @@ export default function CodFormSettingsPage() {
           </Card>
           <Card title="Fields">
             <div className="space-y-4">
-              <p className="text-sm text-muted">Name, mobile number, city and address are always asked.</p>
+              <p className="text-sm text-muted">Name, mobile number, city and address are always asked. Mobile numbers must be valid Pakistani numbers.</p>
               <Toggle label="Ask for email (optional field)" checked={form.showEmail} onChange={(showEmail) => set({ showEmail })} />
               <Toggle label="Allow order notes" checked={form.showNotes} onChange={(showNotes) => set({ showNotes })} />
+              <Toggle
+                label="Ask for a nearby landmark (required)"
+                hint="Helps riders find the address, for example “near Hafeez Centre”. Fewer failed deliveries."
+                checked={form.showLandmark}
+                onChange={(showLandmark) => set({ showLandmark })}
+              />
             </div>
           </Card>
         </div>

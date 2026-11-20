@@ -107,6 +107,33 @@ The template to create in WhatsApp Manager is shown on the WhatsApp settings
 page: four body variables (customer name, order number, store name, total) and
 two quick-reply buttons (Confirm order, Cancel order).
 
+## Return-to-origin protection
+
+- **Shared risk score.** When a COD order is placed, the API counts the
+  phone number's delivered and refused parcels in this store and in all other
+  stores (`src/risk/risk.service.ts`). That is the only cross-store read in the
+  merchant API: it runs on the Super Admin connection and returns totals, never
+  rows or store names.
+- **Order rules** (Merchant Admin → Order rules) hold risky customers and
+  large first orders for a call, or confirm trusted customers automatically.
+  When a held customer confirms, the confirmation is recorded and the order
+  waits for the merchant.
+- **Returns (RTO)** breaks returned parcels down by city, product, courier,
+  ad campaign, hour and risk level. Ad source comes from `utm_*` parameters or
+  Facebook / TikTok / Google click IDs on the landing link.
+- **COD payments** imports a courier's payment report (CSV, any layout: the
+  merchant picks the tracking and amount columns) and matches it to orders by
+  tracking number, and lists delivered orders the courier has not paid for.
+
+## Migrations
+
+Tenant tables carry hand-written row-level security policies and
+`<table>_tenant_fk` foreign keys that Prisma does not know about. When you
+generate a migration, delete any `DROP CONSTRAINT "..._tenant_fk"` lines Prisma
+adds, and add the RLS policy for new tenant tables (see
+`prisma/migrations/*_risk_rules_reconciliation`). `pnpm db:setup` and the test
+suite fail if either is missing.
+
 ## Production notes
 
 - Point a wildcard DNS record and certificate at the storefront app and set

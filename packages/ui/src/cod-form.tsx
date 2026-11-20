@@ -12,6 +12,7 @@ export interface CodFormConfig {
   buttonText: string;
   showEmail: boolean;
   showNotes: boolean;
+  showLandmark?: boolean;
 }
 
 export interface CodFormValues {
@@ -19,6 +20,7 @@ export interface CodFormValues {
   phone: string;
   city: string;
   addressLine: string;
+  landmark: string;
   email: string;
   notes: string;
 }
@@ -30,7 +32,7 @@ export const PK_CITIES = [
 ];
 
 const PK_MOBILE = /^(?:0092|92|0)?3\d{9}$/;
-const EMPTY: CodFormValues = { name: '', phone: '', city: '', addressLine: '', email: '', notes: '' };
+const EMPTY: CodFormValues = { name: '', phone: '', city: '', addressLine: '', landmark: '', email: '', notes: '' };
 
 /**
  * The Cash on Delivery order form. Used on product pages and the cart, and as
@@ -75,6 +77,7 @@ export function CodOrderForm({
     if (!PK_MOBILE.test(values.phone.replace(/[^\d]/g, ''))) next.phone = 'Enter a valid mobile number, e.g. 0300 1234567';
     if (values.city.trim().length < 2) next.city = 'Enter your city';
     if (values.addressLine.trim().length < 8) next.addressLine = 'Enter your complete address with house and street';
+    if (config.showLandmark && values.landmark.trim().length < 3) next.landmark = 'Enter a nearby landmark, e.g. a mosque, school or shop';
     if (config.showEmail && values.email && !/^\S+@\S+\.\S+$/.test(values.email)) next.email = 'Enter a valid email or leave it empty';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -116,6 +119,9 @@ export function CodOrderForm({
           {PK_CITIES.map((c) => <option key={c} value={c} />)}
         </datalist>
         <Textarea label="Complete address" rows={2} autoComplete="street-address" placeholder="House, street, area" value={values.addressLine} onChange={set('addressLine')} error={errors.addressLine} />
+        {config.showLandmark && (
+          <Input label="Nearby landmark" placeholder="Near Jamia Masjid, opposite Allied Bank" value={values.landmark} onChange={set('landmark')} error={errors.landmark} hint="Helps the rider find you" />
+        )}
         {config.showEmail && <Input label="Email (optional)" type="email" autoComplete="email" value={values.email} onChange={set('email')} error={errors.email} />}
         {config.showNotes && <Textarea label="Order notes (optional)" rows={2} value={values.notes} onChange={set('notes')} />}
       </div>

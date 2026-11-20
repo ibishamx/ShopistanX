@@ -4,6 +4,7 @@ import { CartDrawer } from '@/components/cart-drawer';
 import { Footer } from '@/components/footer';
 import { Header } from '@/components/header';
 import { Scroller } from '@/components/scroller';
+import { CAPTURE_SCRIPT } from '@/lib/attribution';
 import { getStore } from '@/lib/store';
 import './globals.css';
 
@@ -44,6 +45,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { announcements } = store.theme;
   return (
     <html lang="en">
+      <head>
+        {/* Static script with no user data: records the ad link the shopper arrived from. */}
+        <script dangerouslySetInnerHTML={{ __html: CAPTURE_SCRIPT }} />
+      </head>
       <body style={{ ['--accent' as string]: store.theme.accentColor }} className="sf flex min-h-screen flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-white focus:px-3 focus:py-2">Skip to content</a>
         {announcements.length > 0 && (

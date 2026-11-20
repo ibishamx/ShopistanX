@@ -4,7 +4,8 @@ import { Badge, Button, Card, Input, Notice, api, dateTime, pkPhone, rs } from '
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { LoadError, Loading, PageHeader } from '@/components/page';
-import { OrderBadge } from '@/components/status';
+import { OrderBadge, RiskBadge } from '@/components/status';
+import Link from 'next/link';
 import { useApi } from '@/lib/use-api';
 
 const NOTIFICATION_TONE: Record<string, 'gray' | 'green' | 'red' | 'blue'> = {
@@ -46,8 +47,17 @@ export default function OrderPage() {
       <PageHeader title={`Order #${order.number}`} back={{ href: '/orders', label: 'Orders' }}>
         <OrderBadge order={order} />
         <Badge>{order.paymentStatus === 'PAID' ? 'COD · cash collected' : 'COD · payment pending'}</Badge>
+        <Link href={`/orders/${id}/record`} className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm hover:bg-canvas">Dispute record</Link>
       </PageHeader>
       {actionError && <div className="mb-4"><Notice>{actionError}</Notice></div>}
+      {pending && order.onHold && (
+        <div className="mb-4">
+          <Notice tone="amber">
+            <strong>Held for your review.</strong> {order.holdReason}.
+            {order.customerConfirmedAt ? ' The customer has confirmed; call them before you release it.' : ' Call the customer before confirming.'}
+          </Notice>
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-5">
@@ -82,7 +92,7 @@ export default function OrderPage() {
                 "Message on WhatsApp" opens a chat with {pkPhone(order.phone)} with the order details and confirmation link already written.
               </p>
               <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-                <Button busy={busy === 'confirm'} onClick={() => act('confirm')}>Mark as confirmed</Button>
+                <Button busy={busy === 'confirm'} onClick={() => act('confirm')}>{order.onHold ? 'Release hold and confirm' : 'Mark as confirmed'}</Button>
                 <Button variant="danger" busy={busy === 'cancel'} onClick={() => act('cancel')}>Cancel order</Button>
               </div>
             </Card>
@@ -161,18 +171,34 @@ export default function OrderPage() {
             <p className="mt-1 text-sm"><a className="text-brand-700 hover:underline" href={`tel:+${order.phone}`}>{pkPhone(order.phone)}</a></p>
             {order.email && <p className="text-sm text-muted">{order.email}</p>}
             <p className="mt-3 text-sm">{order.addressLine}</p>
+            {order.landmark && <p className="text-sm text-muted">Near: {order.landmark}</p>}
             <p className="text-sm">{order.city}</p>
+            {(order.utmSource || order.utmCampaign) && (
+              <p className="mt-3 text-xs text-muted">Came from: {[order.utmSource, order.utmMedium, order.utmCampaign].filter(Boolean).join(' / ')}</p>
+            )}
             {order.notes && <p className="mt-3 rounded-lg bg-canvas p-2 text-sm">"{order.notes}"</p>}
           </Card>
-          <Card title="Order history">
-            {h.total === 0 ? (
-              <p className="text-sm text-muted">First order from this number.</p>
-            ) : (
+          <Card title="Delivery record" action={<RiskBadge level={order.riskLevel} />}>
+            {order.riskDetail ? (
               <>
-                <p className="text-sm">{h.total} earlier order{h.total === 1 ? '' : 's'}: {h.delivered} delivered, {h.returned} returned, {h.cancelled} cancelled.</p>
-                {h.returned > 0 && <div className="mt-3"><Notice tone="amber">This customer has refused a parcel before. Confirm by phone before shipping.</Notice></div>}
+                <p className="text-sm">{order.riskDetail.summary}.</p>
+                <dl className="mt-3 grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 text-sm">
+                  <dt className="text-xs text-muted" />
+                  <dd className="text-xs text-muted">Accepted</dd>
+                  <dd className="text-xs text-muted">Refused</dd>
+                  <dt>Your store</dt>
+                  <dd className="text-right tabular-nums">{order.riskDetail.thisStore.delivered}</dd>
+                  <dd className="text-right tabular-nums">{order.riskDetail.thisStore.returned}</dd>
+                  <dt>Other stores{order.riskDetail.otherStores.stores ? ` (${order.riskDetail.otherStores.stores})` : ''}</dt>
+                  <dd className="text-right tabular-nums">{order.riskDetail.otherStores.delivered}</dd>
+                  <dd className="text-right tabular-nums">{order.riskDetail.otherStores.returned}</dd>
+                </dl>
+                <p className="mt-3 text-xs text-muted">COD parcels to {pkPhone(order.phone)} on Shopistan when this order was placed. Other stores are not named.</p>
               </>
+            ) : (
+              <p className="text-sm text-muted">No record for orders placed before risk scoring was added.</p>
             )}
+            {h.total > 0 && <p className="mt-3 border-t border-line pt-3 text-xs text-muted">In your store: {h.total} earlier order{h.total === 1 ? '' : 's'}, {h.cancelled} cancelled.</p>}
           </Card>
           {order.notifications.length > 0 && (
             <Card title="WhatsApp messages">

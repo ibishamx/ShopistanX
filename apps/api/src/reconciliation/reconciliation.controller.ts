@@ -87,7 +87,8 @@ export class ReconciliationController {
         where: { id },
         include: {
           lines: {
-            orderBy: [{ match: 'asc' }, { trackingNumber: 'asc' }],
+            // Lines that need attention first.
+            orderBy: [{ match: 'desc' }, { trackingNumber: 'asc' }],
             include: { order: { select: { id: true, number: true, totalPaisa: true, fulfillmentStatus: true, customerName: true } } },
           },
         },

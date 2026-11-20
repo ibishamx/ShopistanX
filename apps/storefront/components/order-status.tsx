@@ -6,10 +6,12 @@ import { useState } from 'react';
 export interface PublicOrder {
   number: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  customerConfirmed: boolean;
   fulfillmentStatus: 'UNFULFILLED' | 'SHIPPED' | 'DELIVERED' | 'RETURNED';
   customerName: string;
   phone: string;
   addressLine: string;
+  landmark: string | null;
   city: string;
   subtotalPaisa: number;
   shippingPaisa: number;
@@ -26,6 +28,7 @@ function headline(o: PublicOrder, justPlaced: boolean): { title: string; text: s
   if (o.fulfillmentStatus === 'RETURNED') return { title: 'Parcel returned', text: 'The courier could not deliver this parcel and returned it to the store.' };
   if (o.fulfillmentStatus === 'SHIPPED') return { title: 'Your order is on its way', text: `Shipped with ${o.courierName}, tracking number ${o.trackingNumber}.` };
   if (o.status === 'CONFIRMED') return { title: 'Order confirmed', text: 'We are preparing your parcel for dispatch.' };
+  if (o.customerConfirmed) return { title: 'Thank you for confirming', text: 'We will call you shortly to finalise your order before dispatch.' };
   return {
     title: justPlaced ? `Thank you, ${o.customerName.split(' ')[0]}! Order received` : 'Please confirm your order',
     text: 'One last step: confirm your order so we can dispatch it.',
@@ -37,7 +40,7 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
   const [busy, setBusy] = useState<'confirm' | 'cancel' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const h = headline(order, justPlaced);
-  const pending = order.status === 'PENDING';
+  const pending = order.status === 'PENDING' && !order.customerConfirmed;
   const cancellable = order.status !== 'CANCELLED' && order.fulfillmentStatus === 'UNFULFILLED';
 
   async function act(action: 'confirm' | 'cancel') {
@@ -107,7 +110,7 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
         </dl>
         <h2 className="mt-5 text-sm font-semibold">Delivering to</h2>
         <p className="mt-1 text-sm">{order.customerName} · {order.phone}</p>
-        <p className="text-sm text-muted">{order.addressLine}, {order.city}</p>
+        <p className="text-sm text-muted">{order.addressLine}{order.landmark ? `, near ${order.landmark}` : ''}, {order.city}</p>
       </div>
 
       {cancellable && (

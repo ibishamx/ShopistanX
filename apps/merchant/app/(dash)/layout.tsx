@@ -9,11 +9,14 @@ import { useApi } from '@/lib/use-api';
 const NAV = [
   { href: '/', label: 'Home' },
   { href: '/orders', label: 'Orders' },
+  { href: '/returns', label: 'Returns (RTO)' },
+  { href: '/cod-payments', label: 'COD payments' },
   { href: '/products', label: 'Products' },
   { href: '/customers', label: 'Customers' },
   { href: '/settings', label: 'Store settings' },
   { href: '/settings/design', label: 'Storefront design' },
   { href: '/settings/cod-form', label: 'COD form' },
+  { href: '/settings/order-rules', label: 'Order rules' },
   { href: '/settings/whatsapp', label: 'WhatsApp' },
 ];
 
@@ -41,8 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     href === '/' ? pathname === '/' : href === '/settings' ? pathname === '/settings' : pathname.startsWith(href);
 
   return (
-    <div className="min-h-screen md:grid md:grid-cols-[230px_1fr]">
-      <aside className="border-b border-line bg-white md:min-h-screen md:border-b-0 md:border-r">
+    <div className="min-h-screen md:grid md:grid-cols-[230px_1fr] print:block">
+      <aside className="border-b border-line bg-white md:min-h-screen md:border-b-0 md:border-r print:hidden">
         <div className="flex items-center justify-between px-4 py-4 md:block">
           <Logo />
           <p className="truncate text-sm text-muted md:mt-4 md:font-medium md:text-ink">{me.store.name}</p>
@@ -73,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
       <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8">
         {children}
-        <div className="mt-8 flex gap-4 text-sm md:hidden">
+        <div className="mt-8 flex gap-4 text-sm md:hidden print:hidden">
           {me.store.url && <a href={me.store.url} target="_blank" rel="noreferrer" className="text-brand-700">View store ↗</a>}
           <button onClick={logout} className="text-muted">Sign out</button>
         </div>

@@ -10,6 +10,7 @@ import { useApi } from '@/lib/use-api';
 
 const TABS = [
   ['', 'All'],
+  ['held', 'Held for review'],
   ['pending', 'Needs confirmation'],
   ['confirmed', 'To ship'],
   ['shipped', 'Shipped'],

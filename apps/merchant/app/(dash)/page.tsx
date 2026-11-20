@@ -34,9 +34,10 @@ export default function HomePage() {
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Needs confirmation" value={s.pending} href="/orders?filter=pending" />
+        <Stat label="Held for review" value={s.held} href="/orders?filter=held" />
         <Stat label="Confirmed, to ship" value={s.toShip} href="/orders?filter=confirmed" />
         <Stat label="With courier" value={s.shipped} href="/orders?filter=shipped" />
-        <Stat label="Total orders" value={s.orders} href="/orders" />
+
         <Stat label="Booked sales" value={rs(s.bookedPaisa)} />
         <Stat label="Cash collected" value={rs(s.collectedPaisa)} />
         <Stat label="Delivery rate" value={closed ? `${Math.round((s.delivered / closed) * 100)}%` : '—'} />

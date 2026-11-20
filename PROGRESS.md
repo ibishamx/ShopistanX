@@ -1,10 +1,10 @@
 # Progress log
 
-Last updated: 18 Nov 2026
+Last updated: 20 Nov 2026
 
 ## Done and verified
 
-Verified means covered by the automated suite (`pnpm test`, 40 tests against
+Verified means covered by the automated suite (`pnpm test`, 56 tests against
 real PostgreSQL) and exercised in a browser against the running apps.
 
 | Area | State |
@@ -24,6 +24,12 @@ real PostgreSQL) and exercised in a browser against the running apps.
 | **WhatsApp click-to-chat confirmation** (shopper → store, merchant → customer, confirmation link) | Verified |
 | Dashboard: order counts, booked sales, cash collected, delivery rate, top products | Verified |
 | Super Admin: separate staff login and database role, store list, suspend, reactivate | Verified |
+| **Shared customer risk score**: each COD order scored by the phone number's delivered/refused parcels across all stores; totals only, other stores never named | Verified, including a test that no other store's name or id appears |
+| **Order rules**: hold high-risk customers, hold large first orders over a set amount, auto-confirm trusted customers; held orders record the customer's confirmation but wait for the merchant | Verified |
+| **Pakistan address form**: required nearby landmark (can be turned off), Pakistani mobile check | Verified |
+| **RTO analytics** by city, product, courier, ad campaign (utm and Facebook/TikTok/Google click IDs), hour ordered and customer risk | Verified |
+| **COD reconciliation**: import a courier payment CSV, choose columns, match by tracking number (matched, short-paid, not delivered, unknown, already paid); unpaid and late delivered orders | Verified with a sample file in a made-up PostEx layout |
+| **Dispute record**: printable order record with confirmation, WhatsApp message IDs and timeline in PKT | Verified |
 | Suspended store stops serving storefront and admin | Verified |
 | Append-only audit log of staff actions | Verified |
 
@@ -52,6 +58,28 @@ real PostgreSQL) and exercised in a browser against the running apps.
   their own data first.
 - The theme's collection grid, video reels and search are not built (no
   collections, video or search in the platform yet).
+
+## Feature list (Pakistan-first features doc, 21 Nov) not built, and why
+
+| Feature | Why not yet |
+| --- | --- |
+| SMS / robocall fallback, phone OTP | Needs an SMS or voice provider account |
+| Deposit or advance delivery charge for risky orders, prepaid discount, payment links | Needs JazzCash / Easypaisa / PayFast / Safepay merchant accounts. Rules currently hold the order instead |
+| City and area lists matching courier coverage, uncovered-area warning | Needs courier coverage data from the courier accounts |
+| Courier booking, labels, tracking sync, failed-delivery alerts, smart courier choice | Needs courier API accounts (PostEx first) |
+| Real courier settlement formats | Import works with any CSV by choosing columns; each courier's real report should be tried once accounts exist |
+| Upfront COD payouts | Needs a fintech or courier partner |
+| Meta conversions on confirmed/delivered orders | Needs a Meta pixel and Conversions API token per store |
+| FBR details, tax on orders, tax reports | Needs a tax adviser's rules first; the doc's caution about "online marketplace" status applies |
+| WhatsApp catalog and broadcasts, loyalty points, verified-seller badge, video reviews | Later in the doc's order |
+| Urdu / Roman Urdu | Not started |
+
+## Needs a decision before launch
+
+- **Shared risk score and privacy.** Delivery outcomes for a phone number are
+  shared between stores as totals. Merchant terms and the storefront privacy
+  notice must say so, and a lawyer should confirm it fits Pakistani data
+  protection rules. Customers have no way yet to see or dispute their record.
 
 ## Not built yet
 

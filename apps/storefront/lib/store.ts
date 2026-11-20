@@ -9,7 +9,7 @@ export interface Store {
   whatsappNumber: string | null;
   shippingFeePaisa: number;
   freeShippingOverPaisa: number | null;
-  codForm: { enabled: boolean; headline: string; subheadline: string; buttonText: string; showEmail: boolean; showNotes: boolean };
+  codForm: { enabled: boolean; headline: string; subheadline: string; buttonText: string; showEmail: boolean; showNotes: boolean; showLandmark: boolean };
   theme: Theme;
 }
 
