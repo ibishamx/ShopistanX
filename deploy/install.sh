@@ -46,7 +46,7 @@ else
   git clone -q --branch "$BRANCH" "$REPO" "$DIR"
 fi
 
-IP="$(curl -4 -fsS --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')"
+IP="$(curl -4 -fsS --max-time 10 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
 [ -n "$IP" ] || fail "Could not find this server's public IP address."
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -76,7 +76,7 @@ DOMAIN="$(get DOMAIN)"
 
 # Warn early if DNS does not point here yet (certificates would fail).
 for host in "$DOMAIN" "app.$DOMAIN"; do
-  resolved="$(getent ahostsv4 "$host" | awk 'NR==1 {print $1}')"
+  resolved="$(getent ahostsv4 "$host" | awk 'NR==1 {print $1}' || true)"
   if [ "$resolved" != "$IP" ]; then
     printf '\033[33mWarning: %s points to "%s", not this server (%s). Fix the DNS record; HTTPS starts working once it does.\033[0m\n' "$host" "${resolved:-nothing}" "$IP"
   fi
