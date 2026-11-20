@@ -70,3 +70,23 @@ describe('Super Admin', () => {
     await admin.get('/platform/tenants').expect(401);
   });
 });
+
+describe('on-demand TLS check', () => {
+  let t: TestApp;
+  let m: Merchant;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    m = await registerMerchant(t, 'tls');
+  });
+
+  afterAll(() => t.app.close());
+
+  it('allows certificates only for store hostnames', async () => {
+    await t.http().get('/internal/tls/allowed').query({ domain: m.host }).expect(200);
+    await t.http().get('/internal/tls/allowed').query({ domain: m.host.toUpperCase() }).expect(200);
+    await t.http().get('/internal/tls/allowed').query({ domain: 'random.shopistan.test' }).expect(404);
+    await t.http().get('/internal/tls/allowed').query({ domain: 'evil.example.com' }).expect(404);
+    await t.http().get('/internal/tls/allowed').expect(404);
+  });
+});

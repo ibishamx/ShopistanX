@@ -1,0 +1,55 @@
+# Shopistan reverse proxy. Caddy obtains and renews HTTPS certificates itself.
+#
+#   {$DOMAIN}            marketing site
+#   app.{$DOMAIN}        Merchant Admin
+#   admin.{$DOMAIN}      Super Admin
+#   api.{$DOMAIN}        WhatsApp webhooks only (the apps reach the API internally)
+#   <store>.{$DOMAIN}    storefronts, and later merchants' custom domains
+{
+	email {$ACME_EMAIL}
+	{$CADDY_EXTRA_GLOBAL}
+	on_demand_tls {
+		# Certificates only for hostnames that belong to a store.
+		ask http://api:4000/internal/tls/allowed
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header -Server
+}
+
+{$DOMAIN}, www.{$DOMAIN} {
+	import common
+	reverse_proxy web:3000
+}
+
+app.{$DOMAIN} {
+	import common
+	reverse_proxy merchant:3001
+}
+
+admin.{$DOMAIN} {
+	import common
+	reverse_proxy admin:3003
+}
+
+api.{$DOMAIN} {
+	import common
+	handle /webhooks/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		respond "Not found" 404
+	}
+}
+
+# Every other hostname: a storefront. The storefront app resolves the store
+# from the Host header.
+https:// {
+	import common
+	tls {
+		on_demand
+	}
+	reverse_proxy storefront:3002
+}

@@ -1,0 +1,114 @@
+# Production stack for one server.
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d --build
+name: shopistan
+
+x-app: &app
+  image: shopistan:latest
+  restart: unless-stopped
+  depends_on:
+    setup:
+      condition: service_completed_successfully
+
+x-db-env: &db-env
+  APP_DATABASE_URL: postgresql://shopistan_app:${APP_DB_PASSWORD:?}@postgres:5432/shopistan
+  PLATFORM_DATABASE_URL: postgresql://shopistan_platform:${PLATFORM_DB_PASSWORD:?}@postgres:5432/shopistan
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shopistan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: shopistan
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopistan -d shopistan"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Runs on every start: migrations, database roles, the row-level security
+  # check, and the first Super Admin. The apps start only if it succeeds.
+  setup:
+    image: shopistan:latest
+    build:
+      context: ..
+      args:
+        NEXT_PUBLIC_MERCHANT_URL: https://app.${DOMAIN:?}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *db-env
+      DATABASE_URL: postgresql://shopistan:${POSTGRES_PASSWORD}@postgres:5432/shopistan
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?}
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:?}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:?}
+    working_dir: /app/apps/api
+    command: ["sh", "-c", "pnpm db:setup && pnpm db:seed"]
+
+  api:
+    <<: *app
+    environment:
+      <<: *db-env
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?}
+      API_PORT: "4000"
+      API_URL: https://api.${DOMAIN}
+      STOREFRONT_ROOT_DOMAIN: ${DOMAIN}
+      STOREFRONT_PROTOCOL: https
+      STOREFRONT_PORT: ""
+      COOKIE_SECURE: "true"
+      WHATSAPP_GRAPH_VERSION: ${WHATSAPP_GRAPH_VERSION:-v23.0}
+    working_dir: /app/apps/api
+    command: ["node", "dist/main.js"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  web:
+    <<: *app
+    working_dir: /app/apps/web
+    command: ["pnpm", "start"]
+
+  merchant:
+    <<: *app
+    working_dir: /app/apps/merchant
+    command: ["pnpm", "start"]
+
+  storefront:
+    <<: *app
+    environment:
+      API_URL: http://api:4000
+    working_dir: /app/apps/storefront
+    command: ["pnpm", "start"]
+
+  admin:
+    <<: *app
+    working_dir: /app/apps/admin
+    command: ["pnpm", "start"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [api, web, merchant, storefront, admin]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      CADDY_EXTRA_GLOBAL: ${CADDY_EXTRA_GLOBAL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

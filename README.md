@@ -5,7 +5,7 @@ a one-step COD order form and WhatsApp order confirmation are part of the
 platform, not paid add-ons.
 
 See [PROGRESS.md](PROGRESS.md) for what is done, what is verified and what is
-blocked.
+blocked, and [DEPLOY.md](DEPLOY.md) to put it on a server.
 
 ## Apps
 

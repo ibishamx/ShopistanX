@@ -38,7 +38,7 @@ real PostgreSQL) and exercised in a browser against the running apps.
 | Area | Why |
 | --- | --- |
 | **WhatsApp Cloud API**: automatic template send, webhook replies, delivery receipts | Tested only against a mocked Meta API. Needs a Meta Business account, a WhatsApp Business number and an approved template. The admin shows "Saved, not verified" until Meta accepts a real send. The Graph API version defaults to `v23.0` (`WHATSAPP_GRAPH_VERSION`); check it is still supported when you connect. |
-| Deployment | Nothing is deployed; hosting is not chosen. No Dockerfiles yet. |
+| Deployment | Production setup ready and tested (Docker image, Caddy with automatic HTTPS and per-store certificates, see DEPLOY.md). Tested end to end on a local copy with a test domain; not yet on a real server, because hosting and the domain are not chosen. |
 
 ## Differences from the architecture document
 

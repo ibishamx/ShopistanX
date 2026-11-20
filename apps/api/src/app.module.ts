@@ -7,6 +7,7 @@ import { MerchantGuard } from './auth/auth.guard';
 import { ProductsController } from './catalog/products.controller';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
+import { TlsController } from './tls.controller';
 import { OrdersController } from './orders/orders.controller';
 import { OrdersService } from './orders/orders.service';
 import { PlatformController, PlatformGuard } from './platform/platform.controller';
@@ -20,6 +21,7 @@ import { WhatsappService } from './whatsapp/whatsapp.service';
   imports: [DbModule],
   controllers: [
     HealthController,
+    TlsController,
     AuthController,
     ProductsController,
     OrdersController,
