@@ -4,7 +4,7 @@ Last updated: 24 Nov 2026
 
 ## Done and verified
 
-Verified means covered by the automated suite (`pnpm test`, 66 tests against
+Verified means covered by the automated suite (`pnpm test`, 75 tests against
 real PostgreSQL) and exercised in a browser against the running apps.
 
 | Area | State |
@@ -49,8 +49,8 @@ be used because no computer is connected to the cloud session.
 | Manual and automated collections, sort orders, collection pages, menu | **Built and verified** |
 | Storefront search | **Built and verified** |
 | Import from Shopify's product CSV export (handles kept, re-import updates) | **Built and verified** with a sample file in Shopify's export layout; not yet with a real export |
-| Order tags, editable order notes, order search | Not built (next) |
-| Draft / manual orders (orders taken on WhatsApp or Instagram) | Not built (next) |
+| Order tags (edit, bulk add/remove, filter), private order notes, order search by number, name, phone, tracking, city | **Built and verified** |
+| Manual orders for sales taken on WhatsApp, Instagram, Facebook, TikTok, phone or in person: returning-customer lookup, delivery charge, discount, confirmed or not, WhatsApp confirmation | **Built and verified** |
 | Discount codes | Not built |
 | Pages (policies, about, contact) and navigation menus beyond collections | Not built |
 | URL redirects (IBX has 106) | Not built; needed before moving a store whose old collection addresses differ |

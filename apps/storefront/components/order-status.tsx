@@ -1,6 +1,6 @@
 'use client';
 
-import { Notice, Spinner, api, rs } from '@shopistan/ui';
+import { Notice, Spinner, api, landmarkText, rs } from '@shopistan/ui';
 import { useState } from 'react';
 
 export interface PublicOrder {
@@ -15,6 +15,7 @@ export interface PublicOrder {
   city: string;
   subtotalPaisa: number;
   shippingPaisa: number;
+  discountPaisa: number;
   totalPaisa: number;
   courierName: string | null;
   trackingNumber: string | null;
@@ -106,11 +107,12 @@ export function OrderStatus({ token, initial, justPlaced }: { token: string; ini
         <dl className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
           <div className="flex justify-between"><dt className="text-muted">Subtotal</dt><dd className="tabular-nums">{rs(order.subtotalPaisa)}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Delivery</dt><dd className="tabular-nums">{order.shippingPaisa ? rs(order.shippingPaisa) : 'Free'}</dd></div>
+          {order.discountPaisa > 0 && <div className="flex justify-between"><dt className="text-muted">Discount</dt><dd className="tabular-nums">− {rs(order.discountPaisa)}</dd></div>}
           <div className="flex justify-between font-semibold"><dt>Pay on delivery</dt><dd className="tabular-nums">{rs(order.totalPaisa)}</dd></div>
         </dl>
         <h2 className="mt-5 text-sm font-semibold">Delivering to</h2>
         <p className="mt-1 text-sm">{order.customerName} · {order.phone}</p>
-        <p className="text-sm text-muted">{order.addressLine}{order.landmark ? `, near ${order.landmark}` : ''}, {order.city}</p>
+        <p className="text-sm text-muted">{order.addressLine}{order.landmark ? `, ${landmarkText(order.landmark).toLowerCase()}` : ''}, {order.city}</p>
       </div>
 
       {cancellable && (

@@ -137,7 +137,7 @@ export function ProductForm({ product }: { product?: any }) {
             <Input label="Vendor or brand" list="product-vendors" value={vendor} onChange={(e) => setVendor(e.target.value)} />
             <datalist id="product-vendors">{facets?.vendors.map((t) => <option key={t} value={t} />)}</datalist>
             <div className="sm:col-span-2">
-              <TagsInput value={tags} onChange={setTags} suggestions={facets?.tags ?? []} />
+              <TagsInput value={tags} onChange={setTags} suggestions={facets?.tags ?? []} hint="Press Enter after each tag. Tags can put products into automatic collections." />
             </div>
           </div>
           {product?.collections?.length > 0 && (

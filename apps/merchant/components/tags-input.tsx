@@ -4,7 +4,13 @@ import { inputClass } from '@shopistan/ui';
 import { useId, useState } from 'react';
 
 /** Tag editor: type and press Enter or comma; suggestions come from tags already in use. */
-export function TagsInput({ value, onChange, suggestions = [] }: { value: string[]; onChange: (tags: string[]) => void; suggestions?: string[] }) {
+export function TagsInput({
+  value,
+  onChange,
+  suggestions = [],
+  hint = 'Press Enter after each tag.',
+  placeholder = 'Khaddar, Winter Collection',
+}: { value: string[]; onChange: (tags: string[]) => void; suggestions?: string[]; hint?: string; placeholder?: string }) {
   const [draft, setDraft] = useState('');
   const id = useId();
   const add = (raw: string) => {
@@ -22,7 +28,7 @@ export function TagsInput({ value, onChange, suggestions = [] }: { value: string
         className={inputClass}
         list={`${id}-suggest`}
         value={draft}
-        placeholder="Khaddar, Winter Collection"
+        placeholder={placeholder}
         onChange={(e) => (e.target.value.includes(',') ? add(e.target.value) : setDraft(e.target.value))}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -34,7 +40,7 @@ export function TagsInput({ value, onChange, suggestions = [] }: { value: string
       />
       <datalist id={`${id}-suggest`}>{suggestions.filter((s) => !value.includes(s)).map((s) => <option key={s} value={s} />)}</datalist>
       {value.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Tags">
+        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Tags added">
           {value.map((t) => (
             <li key={t} className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1 text-xs">
               {t}
@@ -43,7 +49,7 @@ export function TagsInput({ value, onChange, suggestions = [] }: { value: string
           ))}
         </ul>
       )}
-      <p className="mt-1 text-xs text-muted">Press Enter after each tag. Tags can put products into automatic collections.</p>
+      <p className="mt-1 text-xs text-muted">{hint}</p>
     </div>
   );
 }

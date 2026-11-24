@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, dateTime, pkPhone, rs } from '@shopistan/ui';
+import { Button, dateTime, landmarkText, pkPhone, rs } from '@shopistan/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { LoadError, Loading } from '@/components/page';
@@ -49,7 +49,7 @@ export default function DisputeRecordPage() {
       <dl>
         {row('Name', order.customerName)}
         {row('Mobile', pkPhone(order.phone))}
-        {row('Address', `${order.addressLine}${order.landmark ? `, near ${order.landmark}` : ''}, ${order.city}`)}
+        {row('Address', `${order.addressLine}${order.landmark ? `, ${landmarkText(order.landmark).toLowerCase()}` : ''}, ${order.city}`)}
       </dl>
 
       <h2 className="mb-1 mt-6 text-sm font-semibold">Confirmation</h2>

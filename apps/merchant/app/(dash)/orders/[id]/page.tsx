@@ -1,10 +1,11 @@
 'use client';
 
-import { Badge, Button, Card, Input, Notice, api, dateTime, pkPhone, rs } from '@shopistan/ui';
+import { Badge, Button, Card, Input, Notice, api, dateTime, landmarkText, pkPhone, rs } from '@shopistan/ui';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { LoadError, Loading, PageHeader } from '@/components/page';
 import { OrderBadge, RiskBadge } from '@/components/status';
+import { OrderTagsNotes } from '@/components/order-tags-notes';
 import Link from 'next/link';
 import { useApi } from '@/lib/use-api';
 
@@ -146,6 +147,7 @@ export default function OrderPage() {
             <dl className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
               <div className="flex justify-between"><dt className="text-muted">Subtotal</dt><dd className="tabular-nums">{rs(order.subtotalPaisa)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Delivery</dt><dd className="tabular-nums">{order.shippingPaisa ? rs(order.shippingPaisa) : 'Free'}</dd></div>
+              {order.discountPaisa > 0 && <div className="flex justify-between"><dt className="text-muted">Discount</dt><dd className="tabular-nums">− {rs(order.discountPaisa)}</dd></div>}
               <div className="flex justify-between font-semibold"><dt>To collect on delivery</dt><dd className="tabular-nums">{rs(order.totalPaisa)}</dd></div>
             </dl>
           </Card>
@@ -166,17 +168,22 @@ export default function OrderPage() {
         </div>
 
         <div className="space-y-5">
+          <OrderTagsNotes orderId={order.id} initialTags={order.tags} initialNote={order.merchantNote} />
           <Card title="Customer">
             <p className="font-medium">{order.customerName}</p>
             <p className="mt-1 text-sm"><a className="text-brand-700 hover:underline" href={`tel:+${order.phone}`}>{pkPhone(order.phone)}</a></p>
             {order.email && <p className="text-sm text-muted">{order.email}</p>}
             <p className="mt-3 text-sm">{order.addressLine}</p>
-            {order.landmark && <p className="text-sm text-muted">Near: {order.landmark}</p>}
+            {order.landmark && <p className="text-sm text-muted">{landmarkText(order.landmark)}</p>}
             <p className="text-sm">{order.city}</p>
             {(order.utmSource || order.utmCampaign) && (
-              <p className="mt-3 text-xs text-muted">Came from: {[order.utmSource, order.utmMedium, order.utmCampaign].filter(Boolean).join(' / ')}</p>
+              <p className="mt-3 text-xs text-muted">
+                {order.source === 'manual'
+                  ? `Entered by you · taken on ${({ whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', phone: 'the phone', walk_in: 'a shop visit' } as Record<string, string>)[order.utmSource] ?? 'another channel'}`
+                  : `Came from: ${[order.utmSource, order.utmMedium, order.utmCampaign].filter(Boolean).join(' / ')}`}
+              </p>
             )}
-            {order.notes && <p className="mt-3 rounded-lg bg-canvas p-2 text-sm">"{order.notes}"</p>}
+            {order.notes && <p className="mt-3 rounded-lg bg-canvas p-2 text-sm"><span className="block text-xs text-muted">Customer’s note</span>{order.notes}</p>}
           </Card>
           <Card title="Delivery record" action={<RiskBadge level={order.riskLevel} />}>
             {order.riskDetail ? (

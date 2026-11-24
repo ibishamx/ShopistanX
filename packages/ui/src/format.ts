@@ -15,6 +15,11 @@ export function fromPaisa(paisa: number | null | undefined): string {
   return paisa == null ? '' : String(paisa / 100);
 }
 
+/** "Jamia Masjid" → "Near Jamia Masjid"; text that already says near/opposite/behind is kept. */
+export function landmarkText(landmark: string): string {
+  return /^(near|opp(osite)?|behind|next to|beside|in front of|across)\b/i.test(landmark.trim()) ? landmark.trim() : `Near ${landmark.trim()}`;
+}
+
 /** 923001234567 → 0300 1234567 */
 export function pkPhone(e164: string): string {
   const local = e164.replace(/^92/, '0');
