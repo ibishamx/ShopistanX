@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { setCartDrawer, useCart } from '@/lib/cart';
-import { BagIcon, CloseIcon, MenuIcon } from './icons';
+import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from './icons';
 
-const LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/products', label: 'Shop all' },
-];
-
-export function Header({ name, logoUrl }: { name: string; logoUrl: string }) {
+export function Header({ name, logoUrl, menu }: { name: string; logoUrl: string; menu: { title: string; handle: string }[] }) {
+  const LINKS = [
+    { href: '/', label: 'Home' },
+    ...menu.map((m) => ({ href: `/collections/${m.handle}`, label: m.title })),
+    { href: '/products', label: 'Shop all' },
+  ];
   const count = useCart().reduce((n, l) => n + l.quantity, 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -30,7 +30,7 @@ export function Header({ name, logoUrl }: { name: string; logoUrl: string }) {
           >
             {menuOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
           </button>
-          <nav aria-label="Main" className="hidden gap-6 md:flex">
+          <nav aria-label="Main" className="hidden flex-wrap gap-x-6 gap-y-1 md:flex">
             {LINKS.map((l) => (
               <Link key={l.href} href={l.href} aria-current={pathname === l.href ? 'page' : undefined} className="text-sm hover:underline underline-offset-4 aria-[current=page]:underline">
                 {l.label}
@@ -46,7 +46,10 @@ export function Header({ name, logoUrl }: { name: string; logoUrl: string }) {
             <span className="sf-display text-center text-xl uppercase tracking-[0.18em] md:text-2xl">{name}</span>
           )}
         </Link>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-1">
+          <Link href="/search" className="grid h-10 w-10 place-items-center" aria-label="Search">
+            <SearchIcon className="h-[22px] w-[22px]" />
+          </Link>
           <button type="button" onClick={() => setCartDrawer(true)} className="relative -mr-2 grid h-10 w-10 place-items-center" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
             <BagIcon className="h-6 w-6" />
             {count > 0 && (

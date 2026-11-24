@@ -68,8 +68,8 @@ function publicProduct(p: any) {
       title: v.title,
       pricePaisa: v.pricePaisa,
       compareAtPaisa: v.compareAtPaisa,
-      available: v.stock > 0,
-      maxQuantity: Math.min(v.stock, 20),
+      available: !v.trackInventory || v.stock > 0,
+      maxQuantity: v.trackInventory ? Math.min(v.stock, 20) : 20,
     })),
   };
 }

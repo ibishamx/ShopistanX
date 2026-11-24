@@ -1,10 +1,10 @@
 # Progress log
 
-Last updated: 20 Nov 2026
+Last updated: 24 Nov 2026
 
 ## Done and verified
 
-Verified means covered by the automated suite (`pnpm test`, 56 tests against
+Verified means covered by the automated suite (`pnpm test`, 66 tests against
 real PostgreSQL) and exercised in a browser against the running apps.
 
 | Area | State |
@@ -32,6 +32,33 @@ real PostgreSQL) and exercised in a browser against the running apps.
 | **Dispute record**: printable order record with confirmation, WhatsApp message IDs and timeline in PKT | Verified |
 | Suspended store stops serving storefront and admin | Verified |
 | Append-only audit log of staff actions | Verified |
+
+## Shopify admin comparison (24 Nov)
+
+Compared against how IBX Collection (ibx.com.pk) uses its Shopify admin, read
+through the Shopify connector: 248 products with type, vendor, tags and SEO
+on each; 13 collections, several rule-based; order tags and notes; 106 URL
+redirects; 2 pages; a blog; 5 customer segments; 1 discount. Chrome could not
+be used because no computer is connected to the cloud session.
+
+| Shopify feature | Shopistan |
+| --- | --- |
+| Product type, vendor, tags, SEO title and description | **Built and verified** |
+| Product search and filters in the admin | **Built and verified** |
+| "Track quantity" off (always in stock) | **Built and verified** |
+| Manual and automated collections, sort orders, collection pages, menu | **Built and verified** |
+| Storefront search | **Built and verified** |
+| Import from Shopify's product CSV export (handles kept, re-import updates) | **Built and verified** with a sample file in Shopify's export layout; not yet with a real export |
+| Order tags, editable order notes, order search | Not built (next) |
+| Draft / manual orders (orders taken on WhatsApp or Instagram) | Not built (next) |
+| Discount codes | Not built |
+| Pages (policies, about, contact) and navigation menus beyond collections | Not built |
+| URL redirects (IBX has 106) | Not built; needed before moving a store whose old collection addresses differ |
+| Customer detail pages, segments, notes, tags | Not built |
+| Abandoned checkouts | Not built |
+| Staff accounts and permissions | Not built |
+| Shipping rates by city or zone | Not built (one flat rate plus free-delivery threshold) |
+| Blog, gift cards, markets, POS, apps | Out of scope for now |
 
 ## Built, not verified against the real service
 

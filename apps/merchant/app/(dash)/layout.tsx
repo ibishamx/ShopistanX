@@ -12,6 +12,7 @@ const NAV = [
   { href: '/returns', label: 'Returns (RTO)' },
   { href: '/cod-payments', label: 'COD payments' },
   { href: '/products', label: 'Products' },
+  { href: '/collections', label: 'Collections' },
   { href: '/customers', label: 'Customers' },
   { href: '/settings', label: 'Store settings' },
   { href: '/settings/design', label: 'Storefront design' },

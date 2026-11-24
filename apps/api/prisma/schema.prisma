@@ -175,6 +175,7 @@ model Product {
 
   @@unique([tenantId, id])
   @@unique([tenantId, handle])
+  @@index([tags], type: Gin)
   @@map("products")
 }
 
@@ -234,6 +235,8 @@ model ProductVariant {
   pricePaisa     Int
   compareAtPaisa Int?
   stock          Int     @default(0)
+  // When false, the variant is always available and orders do not change its stock.
+  trackInventory Boolean @default(true)
   position       Int     @default(0)
 
   product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)

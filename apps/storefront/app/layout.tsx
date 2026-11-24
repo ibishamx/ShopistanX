@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Scroller items={announcements} separator="✦" seconds={25} itemClassName="inline-flex items-center gap-6 whitespace-nowrap px-3" />
           </div>
         )}
-        <Header name={store.name} logoUrl={store.theme.logoUrl} />
+        <Header name={store.name} logoUrl={store.theme.logoUrl} menu={store.menu} />
         <main id="main" className="flex-1">{children}</main>
         <Footer store={store} />
         <CartDrawer />

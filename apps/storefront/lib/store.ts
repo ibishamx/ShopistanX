@@ -11,6 +11,25 @@ export interface Store {
   freeShippingOverPaisa: number | null;
   codForm: { enabled: boolean; headline: string; subheadline: string; buttonText: string; showEmail: boolean; showNotes: boolean; showLandmark: boolean };
   theme: Theme;
+  menu: { title: string; handle: string }[];
+}
+
+export interface CollectionSummary {
+  title: string;
+  handle: string;
+  image: string | null;
+  productCount: number;
+}
+
+export interface CollectionPage {
+  title: string;
+  handle: string;
+  description: string;
+  image: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  sortOrder: string;
+  products: Product[];
 }
 
 export type TrustIcon = 'truck' | 'cash' | 'return' | 'shield' | 'whatsapp' | 'box';
@@ -47,6 +66,9 @@ export interface Product {
   title: string;
   handle: string;
   description: string;
+  productType: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
   images: string[];
   variants: Variant[];
 }

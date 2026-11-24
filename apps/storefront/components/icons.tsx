@@ -21,6 +21,9 @@ export const MenuIcon = ({ className }: IconProps) => (
 export const CloseIcon = ({ className }: IconProps) => (
   <svg {...base} className={className}><path d="M6 6l12 12M18 6 6 18" /></svg>
 );
+export const SearchIcon = ({ className }: IconProps) => (
+  <svg {...base} className={className}><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+);
 export const ArrowIcon = ({ className }: IconProps) => (
   <svg {...base} className={className}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 );

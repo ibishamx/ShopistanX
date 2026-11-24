@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await storeFetch<Product>(`/products/${encodeURIComponent(handle)}`);
   if (!product.ok) return {};
   return {
-    title: product.data.title,
-    description: product.data.description.slice(0, 160),
+    title: product.data.seoTitle || product.data.title,
+    description: product.data.seoDescription || product.data.description.slice(0, 160),
     openGraph: product.data.images[0] ? { images: [product.data.images[0]] } : undefined,
   };
 }

@@ -68,10 +68,13 @@ export class OrdersService {
       for (const variant of variants) {
         const quantity = quantities.get(variant.id)!;
         // Conditional decrement: two shoppers cannot both take the last unit.
-        const { count } = await tx.productVariant.updateMany({
-          where: { id: variant.id, stock: { gte: quantity } },
-          data: { stock: { decrement: quantity } },
-        });
+        // Variants that do not track stock are always available.
+        const { count } = variant.trackInventory
+          ? await tx.productVariant.updateMany({
+              where: { id: variant.id, stock: { gte: quantity } },
+              data: { stock: { decrement: quantity } },
+            })
+          : { count: 1 };
         if (!count) {
           throw new ConflictException(
             variant.stock > 0
@@ -229,7 +232,7 @@ export class OrdersService {
     const items = await tx.orderItem.findMany({ where: { orderId: order.id } });
     for (const item of items) {
       // updateMany: the variant may have been deleted since the order was placed.
-      await tx.productVariant.updateMany({ where: { id: item.variantId }, data: { stock: { increment: item.quantity } } });
+      await tx.productVariant.updateMany({ where: { id: item.variantId, trackInventory: true }, data: { stock: { increment: item.quantity } } });
     }
   }
 }

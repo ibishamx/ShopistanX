@@ -146,3 +146,27 @@ describe('catalog: product fields, search, collections, import', () => {
     await sf(`/products/${longHandle}`).expect(200);
   });
 });
+
+describe('variants that do not track stock', () => {
+  let t: TestApp;
+  let m: Merchant;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    m = await registerMerchant(t, 'untracked');
+  });
+
+  afterAll(() => t.app.close());
+
+  it('stay on sale at zero stock and orders leave their stock alone', async () => {
+    const p = (await m.agent.post('/admin/products').send({ title: 'Made to Order Suit', variants: [{ title: 'Default', pricePaisa: 300_000, stock: 0, trackInventory: false }] }).expect(201)).body;
+    const sfp = (await t.http().get('/storefront/products/made-to-order-suit').set('Host', m.host).expect(200)).body;
+    expect(sfp.variants[0]).toMatchObject({ available: true, maxQuantity: 20 });
+    const order = await t.http().post('/storefront/orders').set('Host', m.host)
+      .send({ name: 'Hina', phone: '0300 7778889', addressLine: 'House 1, Street 2, Saddar', landmark: 'Near Empress Market', city: 'Karachi', items: [{ variantId: p.variants[0].id, quantity: 3 }] })
+      .expect(201);
+    const orders = (await m.agent.get('/admin/orders')).body;
+    await m.agent.post(`/admin/orders/${orders.find((o: any) => o.number === order.body.number).id}/cancel`).expect(200);
+    expect((await m.agent.get(`/admin/products/${p.id}`)).body.variants[0]).toMatchObject({ stock: 0, trackInventory: false });
+  });
+});

@@ -20,7 +20,7 @@ export class AnalyticsController {
           take: 5,
         }),
         tx.product.count(),
-        tx.productVariant.count({ where: { stock: { lte: 3 } } }),
+        tx.productVariant.count({ where: { trackInventory: true, stock: { lte: 3 } } }),
       ]);
       const s = { orders: 0, held: 0, pending: 0, toShip: 0, shipped: 0, delivered: 0, returned: 0, cancelled: 0, bookedPaisa: 0, collectedPaisa: 0 };
       for (const g of groups) {

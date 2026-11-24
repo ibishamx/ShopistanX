@@ -15,6 +15,7 @@ const variantSchema = z.object({
   pricePaisa: z.number().int().min(0).max(1_000_000_000),
   compareAtPaisa: z.number().int().min(0).max(1_000_000_000).nullish(),
   stock: z.number().int().min(0).max(1_000_000),
+  trackInventory: z.boolean().default(true),
 });
 
 const tagsSchema = z
@@ -64,7 +65,7 @@ function productData(input: ProductInput) {
 }
 
 function variantData(v: ProductInput['variants'][number], position: number) {
-  return { title: v.title, sku: v.sku || null, pricePaisa: v.pricePaisa, compareAtPaisa: v.compareAtPaisa ?? null, stock: v.stock, position };
+  return { title: v.title, sku: v.sku || null, pricePaisa: v.pricePaisa, compareAtPaisa: v.compareAtPaisa ?? null, stock: v.stock, trackInventory: v.trackInventory, position };
 }
 
 @Controller('admin/products')
