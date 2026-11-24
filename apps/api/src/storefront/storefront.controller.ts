@@ -1,4 +1,4 @@
-import { Body, CanActivate, Controller, ExecutionContext, Get, HttpCode, Injectable, NotFoundException, Param, Post, ServiceUnavailableException, UseGuards, createParamDecorator } from '@nestjs/common';
+import { Body, CanActivate, Controller, ExecutionContext, Get, HttpCode, Injectable, NotFoundException, Param, Post, Query, ServiceUnavailableException, UseGuards, createParamDecorator } from '@nestjs/common';
 import { Order } from '@prisma/client';
 import { Request } from 'express';
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import { Db, Tx } from '../db/db.service';
 import { OrdersService, codOrderSchema } from '../orders/orders.service';
 import { readCodForm, readTheme } from '../settings/defaults';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { CollectionsService } from '../catalog/collections.service';
+import { SORT_ORDERS, sortProducts } from '../catalog/collection-rules';
 
 interface StoreContext {
   tenantId: string;
@@ -56,6 +58,10 @@ function publicProduct(p: any) {
     title: p.title,
     handle: p.handle,
     description: p.description,
+    productType: p.productType,
+    vendor: p.vendor,
+    seoTitle: p.seoTitle,
+    seoDescription: p.seoDescription,
     images: p.images.map((i: any) => i.url),
     variants: p.variants.map((v: any) => ({
       id: v.id,
@@ -75,12 +81,20 @@ export class StorefrontController {
     private readonly db: Db,
     private readonly orders: OrdersService,
     private readonly whatsapp: WhatsappService,
+    private readonly collections: CollectionsService,
   ) {}
 
   @Get('store')
   async store(@Store() store: StoreContext) {
-    const settings = await this.db.tenant(store.tenantId, (tx) =>
-      tx.storeSettings.findUniqueOrThrow({ where: { tenantId: store.tenantId } }),
+    const [settings, menu] = await this.db.tenant(store.tenantId, (tx) =>
+      Promise.all([
+        tx.storeSettings.findUniqueOrThrow({ where: { tenantId: store.tenantId } }),
+        tx.collection.findMany({
+          where: { published: true, showInMenu: true },
+          orderBy: [{ menuPosition: 'asc' }, { title: 'asc' }],
+          select: { title: true, handle: true },
+        }),
+      ]),
     );
     return {
       name: store.name,
@@ -90,7 +104,71 @@ export class StorefrontController {
       freeShippingOverPaisa: settings.freeShippingOverPaisa,
       codForm: readCodForm(settings.codForm),
       theme: readTheme(settings.theme),
+      menu,
     };
+  }
+
+  @Get('collections')
+  async collectionList(@Store() store: StoreContext) {
+    return this.db.tenant(store.tenantId, async (tx) => {
+      const all = await tx.collection.findMany({ where: { published: true }, orderBy: [{ menuPosition: 'asc' }, { title: 'asc' }] });
+      const counts = await this.collections.counts(tx, all, true);
+      const result = [];
+      for (const c of all) {
+        const count = counts.get(c.id) ?? 0;
+        if (!count) continue;
+        // Without its own image, a collection shows its first product's photo.
+        const image = c.imageUrl ?? (await this.collections.products(tx, c, { activeOnly: true })).find((p) => p.images[0])?.images[0]?.url ?? null;
+        result.push({ title: c.title, handle: c.handle, image, productCount: count });
+      }
+      return result;
+    });
+  }
+
+  @Get('collections/:handle')
+  async collection(@Store() store: StoreContext, @Param('handle') handle: string, @Query('sort') sort?: string) {
+    return this.db.tenant(store.tenantId, async (tx) => {
+      const c = await tx.collection.findFirst({ where: { handle, published: true } });
+      if (!c) throw new NotFoundException('Collection not found');
+      const order = (SORT_ORDERS as readonly string[]).includes(sort ?? '') && !(sort === 'manual' && c.kind === 'SMART') ? sort : undefined;
+      const products = await this.collections.products(tx, c, { activeOnly: true, sort: order });
+      return {
+        title: c.title,
+        handle: c.handle,
+        description: c.description,
+        image: c.imageUrl,
+        seoTitle: c.seoTitle,
+        seoDescription: c.seoDescription,
+        sortOrder: order ?? c.sortOrder,
+        products: products.map(publicProduct),
+      };
+    });
+  }
+
+  @Get('search')
+  async search(@Store() store: StoreContext, @Query('q') q?: string) {
+    const term = (q ?? '').trim().slice(0, 100);
+    if (!term) return { query: '', products: [] };
+    const words = term.split(/\s+/).filter(Boolean).slice(0, 6);
+    const products = await this.db.tenant(store.tenantId, (tx) =>
+      tx.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          // Every word must appear in the title, type, vendor or a tag.
+          AND: words.map((w) => ({
+            OR: [
+              { title: { contains: w, mode: 'insensitive' as const } },
+              { productType: { contains: w, mode: 'insensitive' as const } },
+              { vendor: { contains: w, mode: 'insensitive' as const } },
+              { tags: { hasSome: [w, w.toLowerCase(), w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()] } },
+            ],
+          })),
+        },
+        include: productInclude,
+        take: 60,
+      }),
+    );
+    return { query: term, products: sortProducts(products, 'newest').map(publicProduct) };
   }
 
   @Get('products')

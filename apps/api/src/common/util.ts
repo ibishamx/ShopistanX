@@ -30,3 +30,13 @@ export function formatRupees(paisa: number): string {
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A handle taken from elsewhere (e.g. a Shopify export): kept as-is when already valid, so old URLs keep working. */
+export function cleanHandle(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 255);
+}

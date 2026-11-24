@@ -161,15 +161,68 @@ model Product {
   handle      String
   description String        @default("")
   status      ProductStatus @default(ACTIVE)
+  productType String        @default("")
+  vendor      String        @default("")
+  tags        String[]      @default([])
+  seoTitle       String?
+  seoDescription String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  variants ProductVariant[]
-  images   ProductImage[]
+  variants    ProductVariant[]
+  images      ProductImage[]
+  collections CollectionProduct[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, handle])
   @@map("products")
+}
+
+enum CollectionKind {
+  MANUAL
+  SMART
+}
+
+// A group of products. MANUAL lists products by hand; SMART includes every
+// product matching its rules (by tag, type, vendor, title or price).
+model Collection {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  title          String
+  handle         String
+  description    String         @default("")
+  imageUrl       String?
+  kind           CollectionKind @default(MANUAL)
+  rules          Json           @default("[]")
+  matchAll       Boolean        @default(true)
+  sortOrder      String         @default("newest")
+  published      Boolean        @default(true)
+  showInMenu     Boolean        @default(false)
+  menuPosition   Int            @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  products CollectionProduct[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, handle])
+  @@map("collections")
+}
+
+model CollectionProduct {
+  tenantId     String @map("tenant_id") @db.Uuid
+  collectionId String @db.Uuid
+  productId    String @db.Uuid
+  position     Int    @default(0)
+
+  collection Collection @relation(fields: [tenantId, collectionId], references: [tenantId, id], onDelete: Cascade)
+  product    Product    @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([tenantId, productId])
+  @@map("collection_products")
 }
 
 model ProductVariant {

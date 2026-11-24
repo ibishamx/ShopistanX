@@ -5,6 +5,8 @@ import { ReconciliationController } from './reconciliation/reconciliation.contro
 import { AuthController } from './auth/auth.controller';
 import { MerchantGuard } from './auth/auth.guard';
 import { ProductsController } from './catalog/products.controller';
+import { CollectionsController } from './catalog/collections.controller';
+import { CollectionsService } from './catalog/collections.service';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
 import { TlsController } from './tls.controller';
@@ -24,6 +26,7 @@ import { WhatsappService } from './whatsapp/whatsapp.service';
     TlsController,
     AuthController,
     ProductsController,
+    CollectionsController,
     OrdersController,
     SettingsController,
     AnalyticsController,
@@ -33,6 +36,6 @@ import { WhatsappService } from './whatsapp/whatsapp.service';
     WhatsappController,
     PlatformController,
   ],
-  providers: [MerchantGuard, StoreHostGuard, PlatformGuard, OrdersService, WhatsappService, RiskService],
+  providers: [MerchantGuard, StoreHostGuard, PlatformGuard, OrdersService, WhatsappService, RiskService, CollectionsService],
 })
 export class AppModule {}
