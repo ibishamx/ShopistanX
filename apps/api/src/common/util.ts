@@ -40,3 +40,13 @@ export function cleanHandle(input: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 255);
 }
+
+/** Trims, drops blanks and duplicates (ignoring case), keeps the first spelling. */
+export function normalizeTags(tags: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of tags) {
+    const t = raw.trim();
+    if (t && !out.some((x) => x.toLowerCase() === t.toLowerCase())) out.push(t);
+  }
+  return out;
+}

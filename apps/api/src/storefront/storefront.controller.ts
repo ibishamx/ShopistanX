@@ -233,6 +233,7 @@ export class StorefrontController {
       city: order.city,
       subtotalPaisa: order.subtotalPaisa,
       shippingPaisa: order.shippingPaisa,
+      discountPaisa: order.discountPaisa,
       totalPaisa: order.totalPaisa,
       courierName: order.courierName,
       trackingNumber: order.trackingNumber,

@@ -313,6 +313,9 @@ model Order {
   landmark          String?
   city              String
   notes             String?
+  // The merchant's own notes and labels, never shown to the customer.
+  merchantNote      String?
+  tags              String[]          @default([])
   // Order rules: risk at the time of ordering, and whether the order is held for review.
   riskLevel         String?
   riskDetail        Json?
@@ -326,6 +329,7 @@ model Order {
   utmCampaign       String?
   subtotalPaisa     Int
   shippingPaisa     Int
+  discountPaisa     Int               @default(0)
   totalPaisa        Int
   courierName       String?
   trackingNumber    String?
@@ -344,6 +348,7 @@ model Order {
   @@index([tenantId, createdAt])
   @@index([tenantId, trackingNumber])
   @@index([phone])
+  @@index([tags], type: Gin)
   @@map("orders")
 }
 

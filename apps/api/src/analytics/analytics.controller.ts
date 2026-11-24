@@ -1,4 +1,5 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { normalizePkMobile } from '../common/phone';
 import { Auth, MerchantAuth, MerchantGuard } from '../auth/auth.guard';
 import { Db } from '../db/db.service';
 
@@ -38,6 +39,30 @@ export class AnalyticsController {
         else s.toShip += g._count;
       }
       return { ...s, products, lowStock, topProducts: top.map((t) => ({ title: t.title, quantity: t._sum.quantity ?? 0 })) };
+    });
+  }
+
+  /** A returning customer's details, to fill in a manual order. */
+  @Get('customers/lookup')
+  lookup(@Auth() auth: MerchantAuth, @Query('phone') phoneInput?: string) {
+    const phone = normalizePkMobile(phoneInput ?? '');
+    if (!phone) return null;
+    return this.db.tenant(auth.tenantId, async (tx) => {
+      const customer = await tx.customer.findUnique({ where: { tenantId_phone: { tenantId: auth.tenantId, phone } } });
+      if (!customer) return null;
+      const last = await tx.order.findFirst({ where: { customerId: customer.id }, orderBy: { createdAt: 'desc' }, select: { addressLine: true, landmark: true, city: true } });
+      const counts = await tx.order.groupBy({ by: ['fulfillmentStatus'], where: { customerId: customer.id }, _count: true });
+      const count = (s: string) => counts.find((c) => c.fulfillmentStatus === s)?._count ?? 0;
+      return {
+        name: customer.name,
+        email: customer.email,
+        city: last?.city ?? customer.city,
+        addressLine: last?.addressLine ?? '',
+        landmark: last?.landmark ?? '',
+        orders: counts.reduce((n, c) => n + c._count, 0),
+        delivered: count('DELIVERED'),
+        returned: count('RETURNED'),
+      };
     });
   }
 

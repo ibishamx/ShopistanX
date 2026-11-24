@@ -31,6 +31,47 @@ export const codOrderSchema = z.object({
 });
 export type CodOrderInput = z.infer<typeof codOrderSchema>;
 
+export const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  tiktok: 'TikTok',
+  phone: 'a phone call',
+  walk_in: 'a shop visit',
+  other: 'another channel',
+};
+
+export const manualOrderSchema = z.object({
+  items: z.array(z.object({ variantId: z.string().uuid(), quantity: z.number().int().min(1).max(500) })).min(1, 'Add at least one product').max(100),
+  name: z.string().trim().min(2, 'Enter the customer’s name').max(80),
+  phone: z.string().trim().min(1, 'Enter the customer’s mobile number').max(20),
+  email: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal('')),
+  addressLine: z.string().trim().min(5, 'Enter the delivery address').max(300),
+  landmark: z.string().trim().max(120).optional(),
+  city: z.string().trim().min(2, 'Enter the city').max(60),
+  notes: z.string().trim().max(500).optional(),
+  channel: z.enum(['whatsapp', 'instagram', 'facebook', 'tiktok', 'phone', 'walk_in', 'other']),
+  /** Null or missing: use the store's delivery charge rules. */
+  shippingPaisa: z.number().int().min(0).max(10_000_000).nullish(),
+  discountPaisa: z.number().int().min(0).max(1_000_000_000).default(0),
+  alreadyConfirmed: z.boolean().default(true),
+  sendConfirmation: z.boolean().default(false),
+  merchantNote: z.string().trim().max(2000).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
+});
+export type ManualOrderInput = z.infer<typeof manualOrderSchema>;
+
+interface CreateOptions {
+  kind: 'storefront' | 'manual';
+  channel?: string;
+  shippingPaisa?: number | null;
+  discountPaisa?: number;
+  alreadyConfirmed?: boolean;
+  sendConfirmation?: boolean;
+  merchantNote?: string | null;
+  tags?: string[];
+}
+
 export type Actor = 'customer' | 'merchant' | 'whatsapp' | 'system';
 
 @Injectable()
@@ -41,8 +82,35 @@ export class OrdersService {
     private readonly risk: RiskService,
   ) {}
 
-  /** Places a cash-on-delivery order. Prices and totals are computed here, never taken from the client. */
-  async placeCodOrder(tenantId: string, input: CodOrderInput): Promise<Order> {
+  /** Places a cash-on-delivery order from the storefront. Prices and totals are computed here, never taken from the client. */
+  placeCodOrder(tenantId: string, input: CodOrderInput): Promise<Order> {
+    return this.createOrder(tenantId, input, { kind: 'storefront' });
+  }
+
+  /**
+   * An order the merchant enters for a sale agreed in a chat or on the phone.
+   * Same stock, numbering, risk and rules as storefront orders; the merchant
+   * may set the delivery charge and a discount, and mark it already confirmed.
+   */
+  createManualOrder(tenantId: string, input: ManualOrderInput): Promise<Order> {
+    return this.createOrder(
+      tenantId,
+      { ...input, source: 'cod_form', utm: { source: input.channel, medium: 'manual' } },
+      {
+        kind: 'manual',
+        channel: input.channel,
+        shippingPaisa: input.shippingPaisa ?? null,
+        discountPaisa: input.discountPaisa,
+        alreadyConfirmed: input.alreadyConfirmed,
+        sendConfirmation: input.sendConfirmation,
+        merchantNote: input.merchantNote || null,
+        tags: input.tags,
+      },
+    );
+  }
+
+  private async createOrder(tenantId: string, input: CodOrderInput, opts: CreateOptions): Promise<Order> {
+    const manual = opts.kind === 'manual';
     const phone = normalizePkMobile(input.phone);
     if (!phone) {
       throw new BadRequestException({ field: 'phone', message: 'Enter a valid Pakistani mobile number, e.g. 0300 1234567' });
@@ -61,7 +129,7 @@ export class OrdersService {
         include: { product: true },
       });
       if (variants.length !== quantities.size) {
-        throw new ConflictException('One of the products in your order is no longer available');
+        throw new ConflictException(manual ? 'One of the products is a draft or was deleted. Make it active first.' : 'One of the products in your order is no longer available');
       }
 
       let subtotalPaisa = 0;
@@ -76,11 +144,8 @@ export class OrdersService {
             })
           : { count: 1 };
         if (!count) {
-          throw new ConflictException(
-            variant.stock > 0
-              ? `Only ${variant.stock} left of ${variant.product.title}`
-              : `${variant.product.title} is out of stock`,
-          );
+          const name = variant.title === 'Default' ? variant.product.title : `${variant.product.title} (${variant.title})`;
+          throw new ConflictException(variant.stock > 0 ? `Only ${variant.stock} left of ${name}` : `${name} is out of stock`);
         }
         subtotalPaisa += variant.pricePaisa * quantity;
       }
@@ -90,12 +155,16 @@ export class OrdersService {
         where: { tenantId },
         data: { nextOrderNumber: { increment: 1 } },
       });
-      if (readCodForm(settings.codForm).showLandmark && !input.landmark) {
+      if (!manual && readCodForm(settings.codForm).showLandmark && !input.landmark) {
         throw new BadRequestException({ field: 'landmark', message: 'Enter a nearby landmark so the rider can find you' });
       }
       const number = settings.nextOrderNumber - 1;
       const freeShipping = settings.freeShippingOverPaisa != null && subtotalPaisa >= settings.freeShippingOverPaisa;
-      const shippingPaisa = freeShipping ? 0 : settings.shippingFeePaisa;
+      const shippingPaisa = opts.shippingPaisa ?? (freeShipping ? 0 : settings.shippingFeePaisa);
+      const discountPaisa = opts.discountPaisa ?? 0;
+      if (discountPaisa > subtotalPaisa + shippingPaisa) {
+        throw new BadRequestException({ field: 'discountPaisa', message: 'The discount is more than the order total' });
+      }
 
       const customer = await tx.customer.upsert({
         where: { tenantId_phone: { tenantId, phone } },
@@ -103,9 +172,12 @@ export class OrdersService {
         update: { name: input.name, city: input.city, ...(input.email ? { email: input.email } : {}) },
       });
 
-      const totalPaisa = subtotalPaisa + shippingPaisa;
-      const decision = decide(readOrderRules(settings.orderRules), risk, totalPaisa);
+      const totalPaisa = subtotalPaisa + shippingPaisa - discountPaisa;
+      const decision = opts.alreadyConfirmed ? ({ action: 'none' } as const) : decide(readOrderRules(settings.orderRules), risk, totalPaisa);
       const utm = (value?: string) => (value ? value.slice(0, 150) : null);
+      const placedMessage = manual
+        ? `Order entered by you${opts.channel ? ` (taken on ${CHANNEL_LABELS[opts.channel] ?? opts.channel})` : ''}`
+        : `Order placed with Cash on Delivery (${input.source === 'cart' ? 'cart checkout' : 'COD form'})`;
 
       let order = await tx.order.create({
         data: {
@@ -113,7 +185,7 @@ export class OrdersService {
           number,
           publicToken: randomToken(16),
           customerId: customer.id,
-          source: input.source,
+          source: manual ? 'manual' : input.source,
           customerName: input.name,
           phone,
           email: input.email || null,
@@ -121,8 +193,11 @@ export class OrdersService {
           landmark: input.landmark || null,
           city: input.city,
           notes: input.notes || null,
+          merchantNote: opts.merchantNote ?? null,
+          tags: opts.tags ?? [],
           subtotalPaisa,
           shippingPaisa,
+          discountPaisa,
           totalPaisa,
           riskLevel: risk.level,
           riskDetail: risk as object,
@@ -141,16 +216,15 @@ export class OrdersService {
               quantity: quantities.get(v.id)!,
             })),
           },
-          events: {
-            create: {
-              type: 'placed',
-              actor: 'customer',
-              message: `Order placed with Cash on Delivery (${input.source === 'cart' ? 'cart checkout' : 'COD form'})`,
-            },
-          },
+          events: { create: { type: 'placed', actor: manual ? 'merchant' : 'customer', message: placedMessage } },
         },
       });
 
+      if (opts.alreadyConfirmed) {
+        order = await this.confirm(tx, order, 'merchant', 'confirmed_in_chat');
+        if (risk.level === 'risky') await this.event(tx, order, 'rule', 'system', `Note: high return risk. ${risk.summary}.`);
+        return { order, notificationId: null };
+      }
       if (decision.action === 'hold') {
         await this.event(tx, order, 'held', 'system', `Held for your review. ${decision.reason}`);
       } else if (decision.action === 'auto_confirm') {
@@ -161,7 +235,12 @@ export class OrdersService {
       }
 
       // Outbox row written in the same transaction as the order; sent after commit.
-      const notificationId = await this.whatsapp.queueOrderConfirmation(tx, order);
+      // Manual orders send only when asked, and fail clearly if WhatsApp is not connected.
+      const notificationId = manual
+        ? opts.sendConfirmation
+          ? await this.whatsapp.queueOrderConfirmation(tx, order, { manual: true })
+          : null
+        : await this.whatsapp.queueOrderConfirmation(tx, order);
       return { order, notificationId };
     });
 
